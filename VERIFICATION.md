@@ -69,6 +69,7 @@ Items listed here are absent from the recorded run, not passing.
 - **2026-10-25, deployment.** The system was placed on a public host and began serving the site and the archive at https://evorph.net behind TLS, with the API on loopback behind a reverse proxy.
 - **2026-10-25, first live round.** Both roles ran against the metered provider in one scheduled round; the two calls were reserved and settled in the private ledger, and the round's record passed the publication gate into the public archive. The archive shows its identifier and outcome; this repository stores no live inference output.
 - **Scope of the numbers above.** The recorded results still describe the fixture-based test run of 2026-10-24. The suites were not re-run against the live channel, and the live round is evidence about one production round, not a substitute for the suites.
+- **2026-10-25, four correctness and trust fixes.** Retained decisions now become the next scheduled round's frozen input; the online seeker format admits an optional search strategy; rate-limit keys resolve per client behind the loopback proxy; and every published verification links a sanitized evidence pack with an offline replay command. The backend suites were re-run in full for this change: **215 tests, 0 failures, 0 errors, 0 skipped**, and the frontend recorded `npm run check` exit code 0 with `npm test` 33 pass, 0 fail.
 
 ## What a passing run does and does not mean
 

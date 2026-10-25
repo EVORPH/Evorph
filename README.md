@@ -65,6 +65,16 @@ Open http://127.0.0.1:4174/ — a machine serving only these files has no archiv
 
 The public projection is defined by `frontend/research-contract.d.ts` and enforced by `frontend/dist/research-contract.js`. Records reach the page only through an allowlisted transformation of private state; raw rows, raw model responses, and internal exceptions are never returned. Public statements are intentional role output, not extracted reasoning traces.
 
+## Replay a published verdict
+
+Every published verification record links its evidence pack at `/api/research/experiments/<experiment>/evidence/<evidence>`. The pack carries the candidate rules, the tested challenge, and the fixed program's trace with its digests, and nothing else: no ledger rows, no credentials, no model text.
+
+```
+python3 -m ops replay-evidence --pack pack.json --config ops.json
+```
+
+The command re-runs the deterministic judging in a throwaway state directory, offline, and prints whether the recomputed verdict matches the published one; exit code 0 means it matches. Fixture ceremonies and cpu/rss telemetry are regenerated per run and are excluded from the comparison by design, so the comparison covers the specification, the challenge, the candidate, every per-event judgment, and the conclusion.
+
 ## Money and spending
 
 Every model call is reserved against a private ledger before it is dispatched, and a call whose outcome is unknown stays unknown: a disconnect after dispatch is never treated as free. Daily and monthly caps are operator configuration, and the ledger can be paused. No cap value is published, because a published identifier must not encode a budget.

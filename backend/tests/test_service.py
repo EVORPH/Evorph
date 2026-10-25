@@ -9,12 +9,12 @@ from agents.fixtures import ScriptedTransport, keeper_payload, reply, response, 
 from agents.research import Research, fixed_cases
 from agents.strategy import baseline as search_baseline
 from evorph.candidates import baseline
-from evorph.contracts import InputError, canonical, parse_json
+from evorph.contracts import InputError, canonical, digest, parse_json
 from evorph.evaluation import plan
 from runtime.accounting import Accounting
 from runtime.backup import create_backup, restore_backup
 from runtime.store import ConflictError, Limits, Store
-from service.http_api import MAX_BODY_BYTES, Request, dispatch, handler
+from service.http_api import MAX_BODY_BYTES, Request, dispatch, handler, resolve_client_key
 from service.public_store import PublicService, ServiceLimits, review_event, RELEASABLE
 
 PROVIDER = 'synthetic-provider'
@@ -205,6 +205,28 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual([self.post('/api/challenges', raw, headers).status for _ in range(3)], [202, 202, 429])
         self.clock[0] += 61
         self.assertEqual(self.post('/api/challenges', raw, headers).status, 202)
+
+    def test_client_key_trusts_only_the_loopback_proxy_and_its_rightmost_hop(self):
+        self.assertEqual(resolve_client_key('127.0.0.1', {'x-forwarded-for': '203.0.113.7, 198.51.100.9'}), '198.51.100.9')
+        self.assertEqual(resolve_client_key('::1', {'x-forwarded-for': '2001:db8::1, 203.0.113.7'}), '203.0.113.7')
+        self.assertEqual(resolve_client_key('127.0.0.1', {'x-forwarded-for': 'not-an-address'}), '127.0.0.1')
+        self.assertEqual(resolve_client_key('127.0.0.1', {}), '127.0.0.1')
+        self.assertEqual(resolve_client_key('203.0.113.5', {'x-forwarded-for': '198.51.100.9'}), '203.0.113.5')
+
+    def test_published_verification_links_a_replayable_evidence_pack(self):
+        records = self.get('/api/research/experiments/' + self.experiment_id + '/records').body['records']
+        verification = [record for record in records if record.get('speaker') == 'verifier' and record.get('evidence')]
+        self.assertTrue(verification)
+        href = verification[0]['evidence'][0]['href']
+        self.assertTrue(href.startswith('/api/research/experiments/' + self.experiment_id + '/evidence/'))
+        pack = self.get(href).body
+        self.assertEqual(pack['schema_version'], 'evidence-pack.v1')
+        self.assertEqual(pack['evidence_id'], verification[0]['evidence'][0]['evidence_id'])
+        self.assertEqual(pack['trace']['candidate_digest'], digest(canonical(pack['candidate'])))
+        self.assertEqual(pack['trace']['plan_digest'], digest(canonical(pack['challenge'])))
+        self.assertIn('trace_digest', pack)
+        self.assertNotIn('micros', canonical(pack).decode())
+        self.assertEqual(self.get('/api/research/experiments/' + self.experiment_id + '/evidence/evidence-nope').status, 400)
 
     def test_transport_boundaries_return_fixed_reasons_without_private_text(self):
         self.assertEqual(self.post('/api/challenges', b'x' * (MAX_BODY_BYTES + 1)).status, 413)

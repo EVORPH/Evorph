@@ -6,7 +6,8 @@ import secrets
 import sqlite3
 import uuid
 
-from evorph.contracts import SPEC, InputError, canonical, exact, identifier, integer, parse_json
+from evorph.contracts import SPEC, SPEC_DIGEST, InputError, canonical, digest, exact, identifier, integer, parse_json, unb64
+from evorph.evidence import read_file
 from runtime.store import ConflictError
 from . import publication
 from .access import credential_digest, issue_session
@@ -255,6 +256,45 @@ class PublicService:
                                               (record['record_id'], batch_id, record['sequence'], body, self.now()))
                 published += 1
         return {'experiment_id': self.research.alias('experiment', batch_id), 'published': published}
+
+    def evidence_pack(self, experiment_id, evidence_id):
+        """Sanitized replay material for one recorded verification: the candidate rules,
+        the tested challenge and the fixed program's trace. Ledger rows, credentials and
+        model text never leave the store through this projection."""
+        store = self.research.store
+        batch = store.connection.execute(
+            "SELECT internal_id FROM research_aliases WHERE kind='experiment' AND public_id=?", (experiment_id,)).fetchone()
+        artifact = store.connection.execute(
+            "SELECT internal_id FROM research_aliases WHERE kind='evidence' AND public_id=?", (evidence_id,)).fetchone()
+        if batch is None or artifact is None:
+            raise InputError('Evidence is unavailable for this experiment.')
+        record = None
+        for row in store.connection.execute(
+                "SELECT body FROM research_journal WHERE batch_id=? AND kind='verification'", (batch[0],)):
+            body = parse_json(row[0], SPEC['limits']['artifact_bytes'])
+            if body['artifact_id'] == artifact[0]:
+                record = body
+        if record is None:
+            raise InputError('Evidence is unavailable for this experiment.')
+        packed = read_file(store.root / 'objects', artifact[0] + '.blob', store.limits.artifact_bytes)
+        if digest(packed) != artifact[0]:
+            raise InputError('Research artifact is inconsistent.')
+        files = parse_json(packed, store.limits.artifact_bytes)
+        trace = parse_json(unb64(files['trace.json'], SPEC['limits']['artifact_bytes']), SPEC['limits']['artifact_bytes'])
+        job = store.get_job(record['job_id'])
+        policy = store.connection.execute('SELECT body FROM versions WHERE version_id=?', (record['policy_id'],)).fetchone()
+        if policy is None or type(job.get('input')) is not dict:
+            raise InputError('Evidence candidate is unavailable.')
+        pack = {'schema_version': 'evidence-pack.v1', 'spec_digest': SPEC_DIGEST,
+                'experiment_id': experiment_id, 'evidence_id': evidence_id,
+                'candidate': parse_json(policy[0], SPEC['limits']['artifact_bytes']),
+                'challenge': job['input']['plan'],
+                'trace': trace, 'matches_reference': record['matches_reference'],
+                'trace_digest': digest(canonical(trace)),
+                'replay': {'command': 'python3 -m ops replay-evidence --pack <this file> --config <ops.json>',
+                           'kernel': 'backend/evorph judging core with the executor in backend/runtime'}}
+        pack['pack_sha256'] = digest(canonical({key: value for key, value in pack.items() if key != 'pack_sha256'}))
+        return pack
 
     def challenge_config(self, experiment_id):
         from evorph.contracts import SPEC_DIGEST

@@ -73,7 +73,20 @@ def role_schemas():
     policy = obj({'schema_version': {'const': 'policy.v1'}, 'spec_digest': {'const': SPEC_DIGEST},
                   'version_id': ident, 'parent_id': ident, 'rules': obj({name: rule for name in ('prepare', 'confirm', 'operation')})})
     keeper = obj({'policy': policy, 'statement': public_statement})
-    return {'seeker': obj({'plan': challenge, 'statement': public_statement}), 'keeper': keeper}
+    # The strategy is optional so a round may keep the inherited search method, but the
+    # object itself is closed: orders must be permutations of the fixed capabilities.
+    def order(names):
+        return {'type': 'array', 'minItems': len(names), 'maxItems': len(names),
+                'items': {'enum': sorted(names)}, 'uniqueItems': True}
+
+    strategy = obj({'schema_version': {'const': 'search-strategy.v1'}, 'spec_digest': {'const': SPEC_DIGEST},
+                    'version_id': ident, 'parent_id': {'anyOf': [ident, {'type': 'null'}]},
+                    'message_order': order(PUBLIC_MESSAGES), 'mutation_order': order(MUTATIONS),
+                    'reduction_order': {'enum': ['forward', 'reverse']}})
+    seeker = {'type': 'object', 'additionalProperties': False,
+              'properties': {'plan': challenge, 'statement': public_statement, 'strategy': strategy},
+              'required': ['plan', 'statement']}
+    return {'seeker': seeker, 'keeper': keeper}
 
 
 class CurlHTTP:

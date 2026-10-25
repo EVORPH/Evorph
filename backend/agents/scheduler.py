@@ -177,8 +177,57 @@ class Scheduler:
             if result['state'] != 'completed':
                 self.store.connection.execute('UPDATE scheduler_policy SET enabled=0,pause_reason=? WHERE policy_id=1',
                                               (result['reason'],))
+        if result['state'] == 'completed':
+            self._advance_template(task['batch_id'], result)
         return {'state': result['state'], 'task_id': task['task_id'], 'batch_id': task['batch_id'],
                 'source': 'player' if task['source_id'] else 'background'}
+
+    def _advance_template(self, batch_id, result):
+        """A retained decision becomes the next round's frozen input: the accepted
+        candidate as target, a retained strategy as method, and this round's evaluation
+        cases carried forward. A round that changes nothing leaves the template
+        untouched, and a template that cannot be frozen keeps the previous one so a
+        finished round is never lost or re-run."""
+        if batch_id is None:
+            return None
+        policy = self.store.connection.execute('SELECT template_id FROM scheduler_policy WHERE policy_id=1').fetchone()
+        if policy is None:
+            return None
+        _, template = self.research.batch(policy['template_id'])
+        target, method, cases = template['target'], template['method'], template['evaluation_cases']
+        if result.get('reason') == 'retained' and type(result.get('candidate_id')) is str:
+            row = self.store.connection.execute('SELECT body FROM versions WHERE version_id=?',
+                                                (result['candidate_id'],)).fetchone()
+            if row is None:
+                return None
+            target = parse_json(row['body'])
+        decision = self.store.connection.execute(
+            "SELECT body FROM research_journal WHERE batch_id=? AND step_key='strategy-decision' "
+            'ORDER BY sequence DESC LIMIT 1', (batch_id,)).fetchone()
+        if decision is not None:
+            body = parse_json(decision[0])
+            if body.get('outcome') == 'retained' and type(body.get('candidate_id')) is str:
+                row = self.store.connection.execute('SELECT body FROM research_methods WHERE version_id=? AND state=?',
+                                                    (body['candidate_id'], 'retained')).fetchone()
+                if row is None:
+                    return None
+                method = parse_json(row['body'])
+        evaluation = self.store.connection.execute(
+            "SELECT body FROM research_journal WHERE batch_id=? AND step_key='evaluation-set' "
+            'ORDER BY sequence DESC LIMIT 1', (batch_id,)).fetchone()
+        if evaluation is not None:
+            cases = parse_json(evaluation[0])['cases']
+        if (target, method, cases) == (template['target'], template['method'], template['evaluation_cases']):
+            return None
+        try:
+            next_id = self.research.freeze('schedule-template-' + batch_id, target, method,
+                search_attempts=template['search_attempts'], reduction_attempts=template['reduction_attempts'],
+                evaluation_cases=cases)
+        except (InputError, ConflictError, CapacityError):
+            return None
+        with self.store.transaction():
+            self.store.connection.execute('UPDATE scheduler_policy SET template_id=? WHERE policy_id=1', (next_id,))
+        return next_id
 
     def _release(self, batch_id, state):
         """Project a finished round; a projection failure never re-runs research or re-bills."""

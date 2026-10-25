@@ -10,7 +10,7 @@ import time
 import unittest
 
 from agents.channel import ModelChannel
-from agents.fixtures import ScriptedTransport, reply, response, seeker_payload, synthetic_meter, usage
+from agents.fixtures import ScriptedTransport, keeper_payload, reply, response, seeker_payload, synthetic_meter, usage
 from agents.metering import CONTEXT_BOUND_BASIS
 from agents.openrouter import OpenRouterTransport
 from agents.research import Research, fixed_cases
@@ -21,6 +21,9 @@ from evorph.evaluation import plan
 from ops.__main__ import SCHEDULE_MISSING, main, run_scheduler, serve_api
 from ops.compose import build, publisher
 from ops.config import load
+from runtime.accounting import Accounting
+from runtime.store import Store
+from service.public_store import PublicService
 
 LIMITS = {'queue_total': 20, 'queue_per_submitter': 10, 'max_attempts': 2, 'lease_seconds': 180,
           'storage_bytes': 134217728, 'min_free_bytes': 0, 'artifact_bytes': 16777216}
@@ -340,6 +343,72 @@ class OpsTests(unittest.TestCase):
         stop.set()
         server.join(timeout=10)
         self.assertFalse(server.is_alive())
+
+    def test_forwarded_clients_keep_separate_rate_buckets_behind_the_loopback_proxy(self):
+        config = load(self.candidate(lambda raw: raw['service']['limits'].update(read_per_window=2)))
+        stop = threading.Event()
+        server = threading.Thread(target=serve_api, args=(config,), kwargs={'stop': stop}, daemon=True)
+        server.start()
+        statuses = []
+        try:
+            for hop in ('203.0.113.10', '203.0.113.10', '203.0.113.10', '203.0.113.11', None):
+                deadline = time.time() + 10
+                while True:
+                    try:
+                        connection = HTTPConnection(config.listen_host, config.listen_port, timeout=5)
+                        headers = {'X-Forwarded-For': hop} if hop else {}
+                        connection.request('GET', '/api/research/experiments', headers=headers)
+                        response = connection.getresponse()
+                        response.read()
+                        statuses.append(response.status)
+                        connection.close()
+                        break
+                    except OSError:
+                        if time.time() > deadline:
+                            raise
+                        time.sleep(0.1)
+        finally:
+            stop.set()
+            server.join(timeout=10)
+        self.assertEqual(statuses, [200, 200, 429, 200, 200])
+
+    def test_replay_evidence_reproduces_a_recorded_verdict_offline_and_rejects_tampering(self):
+        config = load(self.candidate(lambda raw: None))
+        store = Store(config.state, config.limits)
+        accounting = Accounting(store)
+        accounting.configure(1000000, 5000000)
+        scripted = lambda body: ScriptedTransport([reply(response(
+            'synthetic-provider', 'synthetic-research-model', body, usage(10, 10)))])
+        child = {**baseline(), 'version_id': 'synthetic-repair', 'parent_id': 'ignore-retirement'}
+        research = Research(store,
+                            ModelChannel(accounting, config.channels['seeker'][0], scripted(seeker_payload(
+                                plan('prepare', 'confirm', 'legacy-transition'), 'Synthetic scheduled candidate.')),
+                                synthetic_meter),
+                            ModelChannel(accounting, config.channels['keeper'][0], scripted(keeper_payload(child)),
+                                         synthetic_meter),
+                            config.openssl, mode=config.mode)
+        service = PublicService(store, research, config.service_limits, now=time.time, mode=config.mode)
+        try:
+            batch_id = research.freeze('replay-round', baseline('ignore-retirement'), method(),
+                                       search_attempts=1, reduction_attempts=0, evaluation_cases=fixed_cases())
+            self.assertEqual(research.run(batch_id)['reason'], 'retained')
+            verification = [record['body'] for record in research.journal(batch_id) if record['kind'] == 'verification']
+            self.assertTrue(verification)
+            pack = service.evidence_pack(research.alias('experiment', batch_id),
+                                         research.alias('evidence', verification[0]['artifact_id']))
+            pack_path = self.write('pack.json', pack)
+            buffer = io.StringIO()
+            with contextlib.redirect_stdout(buffer):
+                code = main(['replay-evidence', '--config', str(self.path), '--pack', str(pack_path)])
+            self.assertEqual(code, 0)
+            self.assertTrue(json.loads(buffer.getvalue())['replayed'])
+            tampered = json.loads(json.dumps(pack))
+            tampered['matches_reference'] = not pack['matches_reference']
+            tampered_path = self.write('tampered.json', tampered)
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(main(['replay-evidence', '--config', str(self.path), '--pack', str(tampered_path)]), 1)
+        finally:
+            store.close()
 
 
 if __name__ == '__main__':

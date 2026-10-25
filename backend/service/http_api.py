@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+import ipaddress
 import re
 
 from evorph.contracts import InputError, canonical, exact, integer, parse_json
@@ -8,7 +9,34 @@ from .public_store import RateLimited
 
 MAX_BODY_BYTES = 65536
 READ_PATH = re.compile(r'^/api/research/experiments(?:/(?P<experiment>[A-Za-z0-9._:-]{1,120})/records)?$')
+EVIDENCE_PATH = re.compile(r'^/api/research/experiments/(?P<experiment>[A-Za-z0-9._:-]{1,120})'
+                           r'/evidence/(?P<evidence>[A-Za-z0-9._:-]{1,120})$')
 CHALLENGE_PATH = re.compile(r'^/api/challenges(?:/(?P<submission>[A-Za-z0-9._:-]{1,120}))?$')
+
+
+def _loopback(peer):
+    try:
+        return ipaddress.ip_address(peer).is_loopback
+    except ValueError:
+        return False
+
+
+def resolve_client_key(peer, headers):
+    """Rate-limit and identity buckets key on the real client address. Behind the
+    documented loopback reverse proxy every connection arrives from 127.0.0.1, so the
+    proxy-supplied forwarding header is honored only from loopback peers. The rightmost
+    hop is the one our proxy appended, which keeps a client-forged chain from moving
+    the key; an unparsable hop falls back to the peer address."""
+    if not _loopback(peer):
+        return peer
+    forwarded = (headers.get('x-forwarded-for') or '').strip()
+    if not forwarded:
+        return peer
+    hop = forwarded.split(',')[-1].strip()
+    try:
+        return str(ipaddress.ip_address(hop))
+    except ValueError:
+        return peer
 
 
 @dataclass(frozen=True)
@@ -125,6 +153,12 @@ def _route(service, request, *, origin):
                 return Response(200, service.list_experiments(query_value(request.query, 'cursor'), limit))
             return Response(200, service.list_records(match['experiment'], query_value(request.query, 'cursor'),
                                                       optional_int(request.query, 'after_sequence'), limit))
+        evidence = EVIDENCE_PATH.match(path)
+        if evidence:
+            if request.query:
+                raise InputError('Unexpected query field.')
+            service.charge('read:' + request.client_key, service.limits.read_per_window)
+            return Response(200, service.evidence_pack(evidence['experiment'], evidence['evidence']))
         challenge = CHALLENGE_PATH.match(path)
         if challenge and challenge['submission'] is not None:
             service.charge('read:' + request.client_key, service.limits.read_per_window)
@@ -243,7 +277,8 @@ def handler(service, *, origin, request_timeout):
                     raise InputError('Incomplete request body.')
                 headers = {key.lower(): val for key, val in self.headers.items()}
                 query = parse_qs(parts.query, keep_blank_values=True, max_num_fields=10)
-                request = Request(method, parts.path, query, headers, body, self.client_address[0])
+                request = Request(method, parts.path, query, headers, body,
+                                  resolve_client_key(self.client_address[0], headers))
                 self._respond(dispatch(service, request, origin=origin))
             except (InputError, ValueError):
                 try:

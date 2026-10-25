@@ -554,3 +554,49 @@ class Research:
                                        'fixtures': result['trace']['fixture_digest'], 'spec': result['trace']['spec_digest']}))
                       for result in results}
         return bool(results) and len(identities) == 1
+
+
+def recompute_trace(store, challenge, policy, binary):
+    """Re-run the fixed judging for one recorded test inside the caller's own store, so a
+    third party can reproduce a published verdict offline: no network, no model call and
+    no spending, only the deterministic kernel and the local signature binary."""
+    candidates.validate(policy)
+    validate_plan(challenge)
+    bundle, _ = build(binary)
+    with store.worker_lock() as held:
+        if not held:
+            raise ConflictError('Replay requires the exclusive worker lock.')
+        job_id = store.submit(challenge, policy, 'evidence-replay',
+                              'replay-' + digest(canonical({'challenge': challenge, 'policy': policy})))
+        claimed = store.claim(job_id)
+        if claimed is None:
+            raise ConflictError('Replay requires the exclusive worker lock.')
+        execute_claimed(store, claimed, binary, bundle)
+    job = store.get_job(job_id)
+    if job['state'] != 'completed':
+        raise ExecutionError('Replay execution failed.')
+    attempt = store.connection.execute('SELECT artifact_id FROM attempts WHERE run_id=?', (job['result_run_id'],)).fetchone()
+    packed = read_file(store.root / 'objects', attempt['artifact_id'] + '.blob', store.limits.artifact_bytes)
+    if digest(packed) != attempt['artifact_id']:
+        raise InputError('Research artifact is inconsistent.')
+    files = parse_json(packed, store.limits.artifact_bytes)
+    return parse_json(unb64(files['trace.json'], SPEC['limits']['artifact_bytes']), SPEC['limits']['artifact_bytes'])
+
+
+# Fixture ceremonies are regenerated per run by design, and cpu/rss telemetry is not a
+# verdict, so replay compares exactly the fields a judgment depends on. Ceremony-bound
+# values (one run's message digests and generated key digests) are pruned recursively.
+VERDICT_KEYS = ('schema_version', 'spec_digest', 'plan_digest', 'candidate_digest', 'events', 'matches_reference')
+CEREMONY_BOUND_KEYS = ('message_digest', 'new_key_sha256')
+
+
+def _prune_ceremony(value):
+    if type(value) is dict:
+        return {key: _prune_ceremony(item) for key, item in value.items() if key not in CEREMONY_BOUND_KEYS}
+    if type(value) is list:
+        return [_prune_ceremony(item) for item in value]
+    return value
+
+
+def verdict_projection(trace):
+    return _prune_ceremony({key: trace[key] for key in VERDICT_KEYS})

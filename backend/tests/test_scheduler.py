@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import patch
 
 from agents.channel import ChannelSpec, ModelChannel
-from agents.fixtures import ScriptedTransport, reply, response, seeker_payload, synthetic_meter, timed_out, usage
+from agents.fixtures import ScriptedTransport, keeper_payload, reply, response, seeker_payload, synthetic_meter, timed_out, usage
 from agents.research import Research, fixed_cases
 from agents.scheduler import Scheduler
 from agents.strategy import baseline as method
@@ -49,6 +49,71 @@ class SchedulerTests(unittest.TestCase):
 
     def submit(self, key):
         return self.research.register_submission('synthetic-player', key, plan('prepare'), 'baseline-v1')
+
+    def test_seeker_strategy_from_online_shape_is_compared_and_gates_inheritance(self):
+        proposed = {**method(), 'version_id': 'search-proposed-1', 'parent_id': 'search-baseline-v1'}
+        payload = {**seeker_payload(plan('prepare', 'confirm', 'legacy-transition'), 'Synthetic scheduled candidate.'),
+                   'strategy': proposed}
+        child = {**baseline(), 'version_id': 'synthetic-repair', 'parent_id': 'ignore-retirement'}
+        scripted = lambda body: ScriptedTransport([reply(response(
+            'synthetic-provider', 'synthetic/model', body, usage(10, 10)))])
+        research = Research(self.store,
+                            ModelChannel(self.accounts, self.spec, scripted(payload), synthetic_meter),
+                            ModelChannel(self.accounts, self.spec, scripted(keeper_payload(child)), synthetic_meter))
+        batch_id = research.freeze('strategy-round', baseline('ignore-retirement'), method(),
+                                   search_attempts=2, reduction_attempts=0, evaluation_cases=fixed_cases())
+        research.run(batch_id)
+        decisions = [record['body'] for record in research.journal(batch_id)
+                     if record['kind'] == 'decision' and record['body'].get('reason') == 'fixed_search_comparison']
+        self.assertEqual(len(decisions), 1)
+        self.assertEqual(decisions[0]['candidate_id'], 'search-proposed-1')
+        row = self.store.connection.execute('SELECT state,body FROM research_methods WHERE version_id=?',
+                                            ('search-proposed-1',)).fetchone()
+        self.assertIsNotNone(row)
+        self.assertEqual(parse_json(row['body']), proposed)
+        with self.store.transaction():
+            self.store.connection.execute("UPDATE research_methods SET state='proposed' WHERE version_id=?",
+                                          ('search-proposed-1',))
+        with self.assertRaises(ConflictError):
+            research.freeze('gate-proposed', baseline('ignore-retirement'), proposed,
+                            search_attempts=1, reduction_attempts=0, evaluation_cases=fixed_cases())
+        with self.store.transaction():
+            self.store.connection.execute("UPDATE research_methods SET state='retained' WHERE version_id=?",
+                                          ('search-proposed-1',))
+        research.freeze('gate-retained', baseline('ignore-retirement'), proposed,
+                        search_attempts=1, reduction_attempts=0, evaluation_cases=fixed_cases())
+
+    def test_retained_round_advances_the_schedule_template_and_the_next_round_inherits_it(self):
+        child = {**baseline(), 'version_id': 'synthetic-repair', 'parent_id': 'ignore-retirement'}
+        scripted = lambda payload: ScriptedTransport([reply(response(
+            'synthetic-provider', 'synthetic/model', payload, usage(10, 10))) for _ in range(4)])
+        research = Research(self.store,
+                            ModelChannel(self.accounts, self.spec, scripted(seeker_payload(
+                                plan('prepare', 'confirm', 'legacy-transition'), 'Synthetic scheduled candidate.')),
+                                synthetic_meter),
+                            ModelChannel(self.accounts, self.spec, scripted(keeper_payload(child)), synthetic_meter))
+        template = research.freeze('inherit-template', baseline('ignore-retirement'), method(),
+                                   search_attempts=1, reduction_attempts=0, evaluation_cases=fixed_cases())
+        scheduler = Scheduler(research)
+        scheduler.configure(template, interval_seconds=1, check_seconds=1)
+        scheduler.enable()
+        first = scheduler.tick()
+        self.assertEqual(first['state'], 'completed')
+        self.assertEqual(first['source'], 'background')
+        grown = [record['body']['cases'] for record in research.journal(first['batch_id'])
+                 if record['kind'] == 'evaluation_set']
+        self.assertTrue(grown and len(grown[-1]) > len(fixed_cases()))
+        policy = self.store.connection.execute('SELECT template_id FROM scheduler_policy WHERE policy_id=1').fetchone()
+        self.assertNotEqual(policy['template_id'], template)
+        _, inherited = research.batch(policy['template_id'])
+        self.assertEqual(inherited['target']['version_id'], 'synthetic-repair')
+        self.assertEqual(inherited['evaluation_cases'], grown[-1])
+        self.now += 1
+        second = scheduler.tick()
+        self.assertEqual(second['state'], 'completed')
+        _, snapshot = research.batch(second['batch_id'])
+        self.assertEqual(snapshot['target']['version_id'], 'synthetic-repair')
+        self.assertEqual(snapshot['evaluation_cases'], grown[-1])
 
     def test_disabled_until_configured_and_enabled(self):
         self.assertEqual(self.scheduler.tick(), {'state': 'paused'})

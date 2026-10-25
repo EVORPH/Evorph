@@ -54,7 +54,8 @@ def record(research, batch_id, event, approved_digests):
                       public_text=text, assertion='supported', test_ids=[test_id])
         result['candidate'] = {'version_id': alias('version', body['policy_id']),
                                'parent_version_id': None if body['parent_id'] is None else alias('version', body['parent_id'])}
-        result['evidence'] = [{'evidence_id': evidence_id, 'label': 'Recorded test evidence', 'href': None}]
+        result['evidence'] = [{'evidence_id': evidence_id, 'label': 'Recorded test evidence',
+                               'href': '/api/research/experiments/' + alias('experiment', batch_id) + '/evidence/' + evidence_id}]
         result['verification'] = {'outcome': 'passed' if body['matches_reference'] else 'failed',
                                   'summary': text, 'test_ids': [test_id], 'evidence_ids': [evidence_id]}
     elif kind == 'comparison':

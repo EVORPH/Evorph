@@ -4,10 +4,11 @@ from pathlib import Path
 import signal
 import sqlite3
 import sys
+import tempfile
 import threading
 
-from evorph.contracts import ExecutionError, InputError, canonical
-from runtime.store import CapacityError, ConflictError
+from evorph.contracts import ExecutionError, InputError, canonical, digest, parse_json
+from runtime.store import CapacityError, ConflictError, Store
 from service.http_api import handler
 
 from .compose import build
@@ -157,6 +158,31 @@ def reconcile(config):
         runtime.close()
 
 
+def replay_evidence(config, pack_path):
+    """Recompute one published verdict offline in a throwaway store and compare the
+    verdict projection; fixture ceremonies and resource telemetry are excluded by design."""
+    from agents.research import recompute_trace, verdict_projection
+    pack = parse_json(Path(pack_path).read_bytes(), 16 * 1024 * 1024)
+    if type(pack) is not dict or pack.get('schema_version') != 'evidence-pack.v1':
+        raise InputError('Unknown evidence pack version.')
+    for key in ('candidate', 'challenge', 'trace', 'trace_digest', 'matches_reference', 'pack_sha256'):
+        if key not in pack:
+            raise InputError('Evidence pack is incomplete.')
+    intact = (digest(canonical(pack['trace'])) == pack['trace_digest']
+              and pack['pack_sha256'] == digest(canonical({key: value for key, value in pack.items()
+                                                           if key != 'pack_sha256'})))
+    with tempfile.TemporaryDirectory(prefix='evorph-replay-') as temp:
+        store = Store(Path(temp) / 'state', config.limits)
+        try:
+            trace = recompute_trace(store, pack['challenge'], pack['candidate'], config.openssl)
+        finally:
+            store.close()
+    replayed = intact and verdict_projection(trace) == verdict_projection(pack['trace'])
+    print(canonical({'replayed': replayed, 'verdict_digest': digest(canonical(verdict_projection(trace))),
+                     'matches_reference': trace['matches_reference']}).decode())
+    return 0 if replayed else 1
+
+
 def main(argv=None):
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument('--config', required=True, type=Path)
@@ -176,6 +202,8 @@ def main(argv=None):
     interval.add_argument('--interval-seconds', required=True, type=int)
     interval.add_argument('--enable-if-clear', action='store_true')
     commands.add_parser('reconcile', parents=[common])
+    replay = commands.add_parser('replay-evidence', parents=[common])
+    replay.add_argument('--pack', required=True)
     opts = parser.parse_args(argv)
     try:
         config = load(opts.config)
@@ -191,6 +219,8 @@ def main(argv=None):
             return set_interval(config, opts.interval_seconds, opts.enable_if_clear)
         if opts.command == 'reconcile':
             return reconcile(config)
+        if opts.command == 'replay-evidence':
+            return replay_evidence(config, opts.pack)
         if opts.command == 'schedule-enable':
             return set_enabled(config, True)
         return set_enabled(config, False)

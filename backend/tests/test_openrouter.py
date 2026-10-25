@@ -9,8 +9,9 @@ from agents.channel import ChannelSpec, TransportDisconnected, TransportTimeout
 from agents.fixtures import synthetic_meter
 from agents.metering import CONTEXT_BOUND_BASIS, context_bound_meter
 from agents.openrouter import BODY_LIMIT, CurlHTTP, OpenRouterChannel, micros, role_schemas
+from agents.strategy import baseline as search_baseline
 from evorph.candidates import baseline
-from evorph.contracts import InputError, canonical, digest, parse_json
+from evorph.contracts import PUBLIC_MESSAGES, InputError, canonical, digest, parse_json
 from evorph.evaluation import plan
 from runtime.accounting import Accounting
 from runtime.store import CapacityError, ConflictError, Limits, Store
@@ -64,6 +65,34 @@ class OpenRouterTests(unittest.TestCase):
 
     def call(self, channel, key='test-request'):
         return channel.request('seeker', key, self.segments)
+
+    def test_seeker_schema_admits_optional_strategy_and_stays_closed(self):
+        seeker = role_schemas()['seeker']
+        self.assertEqual(seeker['required'], ['plan', 'statement'])
+        self.assertFalse(seeker['additionalProperties'])
+        strategy = seeker['properties']['strategy']
+        self.assertFalse(strategy['additionalProperties'])
+        self.assertEqual(sorted(strategy['required']), sorted(['schema_version', 'spec_digest', 'version_id',
+                                                                 'parent_id', 'message_order', 'mutation_order',
+                                                                 'reduction_order']))
+        self.assertEqual(strategy['properties']['schema_version'], {'const': 'search-strategy.v1'})
+        order = strategy['properties']['message_order']
+        self.assertEqual(order['minItems'], order['maxItems'])
+        self.assertTrue(order['uniqueItems'])
+        self.assertEqual(order['items']['enum'], sorted(PUBLIC_MESSAGES))
+        self.assertEqual(strategy['properties']['reduction_order'], {'enum': ['forward', 'reverse']})
+
+    def test_seeker_completion_carries_strategy_and_the_wire_schema_ships_it(self):
+        proposed = {**search_baseline(), 'version_id': 'search-proposed-1', 'parent_id': 'search-baseline-v1'}
+        value = completion()
+        value['choices'][0]['message']['content'] = canonical(
+            {'plan': plan('prepare'), 'statement': 'Synthetic statement.', 'strategy': proposed}).decode()
+        channel, http = self.channel((200, canonical(value)))
+        outcome = self.call(channel)
+        self.assertEqual(outcome.kind, 'accepted')
+        self.assertEqual(outcome.payload['strategy'], proposed)
+        wire = parse_json(http.sent[0][2], 131072)
+        self.assertIn('search-strategy.v1', canonical(wire).decode())
 
     def test_wire_contract_pins_provider_and_measures_entire_payload(self):
         measured = []
