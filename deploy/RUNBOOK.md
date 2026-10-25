@@ -86,4 +86,4 @@ Every paid round shares one rhythm. A queued participant submission is served fi
 
 - Never run on Linux: memory peaks, subprocess-group timeout reaping, and a backup restore drill.
 - No reverse proxy or certificate is configured here; the proxy software and host are chosen at deployment time.
-- No resident process, no outbound network call, and no real model call is made by anything in this directory.
+- Inspecting or unit-testing the files in this directory starts no resident process and makes no outbound network call. Running the start scripts does both, through whichever channel the configuration names; the live deployment uses the reviewed provider channel, and its current schedule and spending state are operator configuration, not properties of these files.

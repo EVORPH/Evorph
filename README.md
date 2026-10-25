@@ -6,13 +6,13 @@ The first chapter is **legacy key retirement**.
 
 ## Read this before anything else
 
-This repository is the working system, not a finished public service.
+This repository is the working system, and it is deployed. The public site serves the live archive at https://evorph.net.
 
-- **No real model calls are wired up yet.** The research integration accepts recorded fixture transports only and rejects anything else at construction time. Every record the site can currently show is an example, and the page says so.
-- **Nothing here is deployed.** No host, no domain, no resident process, no provider account.
+- **Real model calls are wired.** The two roles call a metered provider gateway through the reviewed transport, and every call is reserved against the private ledger before dispatch. The first live round completed on 2026-10-25 and its record is in the public archive.
+- **Research scheduling is currently off.** The scheduler service is disabled and spending is paused by operator configuration; browsing the archive never starts a round or a model call. Turning sustained research on is an operator decision, not a property of this code.
 - **No result in this repository certifies a real product.** A passing run against published vectors is evidence about the candidate under test in this harness. It is not a claim that any chain, token, or library is quantum-resistant, and a failure produced by this project's own code is not a real-world vulnerability.
 
-What does work today, on a local machine: the deterministic judging core, the private execution ledger with reserved-then-dispatched spending, the offline model channel with byte-level accounting fixtures, the public read and submission API, the scheduling skeleton, the backup and restore paths, and the frontend that renders the public archive.
+What runs in production today: the deterministic judging core, the private execution ledger with reserved-then-dispatched spending, the metered model channel, the public read and submission API, the scheduler (disabled until an operator enables it), the backup and restore paths, and the frontend that renders the public archive. The test suites in this repository run against recorded fixtures, so a checkout here can be tested without contacting any provider.
 
 ## Layout
 
@@ -55,7 +55,7 @@ cd frontend
 python3 -m http.server 4174 --bind 127.0.0.1 --directory dist
 ```
 
-Open http://127.0.0.1:4174/ — it reports that no archive is connected, which is the truthful state. Add `?research=preview#research` to load the labeled example records; they are illustrations of record shapes and lengths, not model output and not accepted results.
+Open http://127.0.0.1:4174/ — a machine serving only these files has no archive behind it, so the page reports the research service as not connected; that is the truthful state for a local static server, while the deployed instance serves the live public archive. Add `?research=preview#research` to load the labeled example records; they are illustrations of record shapes and lengths, not model output and not accepted results.
 
 ## Run the service
 

@@ -59,10 +59,16 @@ Recorded result: **4 of 4 files match the recorded sha256 and byte size**, upstr
 
 - **No Linux run.** Memory peaks, subprocess-group timeout reaping, and a full backup restore drill need the target distribution and are scheduled separately.
 - **No concurrency measurement.** The API process serves one request at a time by design; throughput under load has not been measured.
-- **No real model call.** The research integration accepts recorded fixture transports only, so no provider was contacted, no token was billed, and no live inference result exists anywhere in this repository.
-- **No deployment.** Nothing was published, pushed, or placed on a host.
+- **No real model call in the recorded test run.** The suites exercise the research integration through recorded fixture transports, so the test run contacted no provider and billed no token. Live inference output is not stored in this repository; it lives in the deployed service's private state and reaches readers only through the public archive.
+- **No deployment at snapshot time.** As of this snapshot nothing had been published, pushed, or placed on a host. Deployment happened after it and is recorded in the next section.
 
-Items listed here are absent, not passing.
+Items listed here are absent from the recorded run, not passing.
+
+## Since this snapshot
+
+- **2026-10-25, deployment.** The system was placed on a public host and began serving the site and the archive at https://evorph.net behind TLS, with the API on loopback behind a reverse proxy.
+- **2026-10-25, first live round.** Both roles ran against the metered provider in one scheduled round; the two calls were reserved and settled in the private ledger, and the round's record passed the publication gate into the public archive. The archive shows its identifier and outcome; this repository stores no live inference output.
+- **Scope of the numbers above.** The recorded results still describe the fixture-based test run of 2026-10-24. The suites were not re-run against the live channel, and the live round is evidence about one production round, not a substitute for the suites.
 
 ## What a passing run does and does not mean
 
