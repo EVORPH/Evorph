@@ -1,0 +1,33 @@
+# Placeholder paths: adjust INSTALL_ROOT, CONFIG_DIR and STATE_DIR to the chosen host layout.
+# The reverse proxy in front of this unit terminates TLS and serves static files.
+
+[Unit]
+Description=EVORPH public read and submission API
+After=network.target
+
+[Service]
+Type=simple
+User=evorph
+Group=evorph
+WorkingDirectory=/opt/evorph/backend
+Environment=PYTHONPATH=/opt/evorph/backend
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/evorph/venv/bin/python -m ops serve-api --config /etc/evorph/ops.json
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ProtectKernelTunables=true
+ProtectControlGroups=true
+ReadWritePaths=/var/lib/evorph
+MemoryMax=1G
+MemoryHigh=768M
+CPUQuota=100%
+TasksMax=64
+LimitNOFILE=4096
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,38 @@
+# Placeholder paths: adjust INSTALL_ROOT, CONFIG_DIR and STATE_DIR to the chosen host layout.
+# Do not enable this unit before a schedule is configured; it exits with code 3 without one.
+# Memory and CPU caps cover the whole cgroup, including the crypto subprocesses it spawns.
+
+[Unit]
+Description=EVORPH research scheduling worker
+After=network.target
+StartLimitIntervalSec=900
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=evorph
+Group=evorph
+WorkingDirectory=/opt/evorph/backend
+Environment=PYTHONPATH=/opt/evorph/backend
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/evorph/venv/bin/python -m ops run-scheduler --config /etc/evorph/ops.json
+Restart=on-failure
+RestartSec=30
+TimeoutStopSec=900
+KillMode=control-group
+KillSignal=SIGTERM
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ProtectKernelTunables=true
+ProtectControlGroups=true
+ReadWritePaths=/var/lib/evorph
+MemoryMax=2G
+MemoryHigh=1536M
+CPUQuota=200%
+TasksMax=128
+LimitNOFILE=4096
+
+[Install]
+WantedBy=multi-user.target

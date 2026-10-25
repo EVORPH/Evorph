@@ -1,0 +1,30 @@
+{
+  "repo": "usnistgov/ACVP-Server",
+  "commit": "975de31eb83d87039ec88934fdc47d8c312b892d",
+  "files": [
+    {
+      "path": "gen-val/json-files/ML-DSA-sigVer-FIPS204/prompt.json",
+      "local_path": "prompt.json",
+      "sha256": "e2cba4589389756fa0bea1a7e6837138bf0a81f9d14234c9ee8f6d33caa1654e",
+      "size": 3125947
+    },
+    {
+      "path": "gen-val/json-files/ML-DSA-sigVer-FIPS204/expectedResults.json",
+      "local_path": "expectedResults.json",
+      "sha256": "e1d84ef1b2f35196278ab0b0ed6a46ec62cc03d2dfa92c564199e1999bfb8ea6",
+      "size": 13956
+    },
+    {
+      "path": "gen-val/json-files/ML-DSA-sigVer-FIPS204/registration.json",
+      "local_path": "registration.json",
+      "sha256": "55878cee2c7a8cf275f4138231f1b5f98880ff81a99face609207415053fb859",
+      "size": 914
+    },
+    {
+      "path": "README.md",
+      "local_path": "UPSTREAM_NOTICE.txt",
+      "sha256": "d5a569884ee83bd1c4737042d0a2cc7d68c6950690f75a73ef14f505a9aa3555",
+      "size": 21473
+    }
+  ]
+}

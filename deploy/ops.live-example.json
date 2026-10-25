@@ -1,0 +1,56 @@
+{
+  "state": "/var/lib/evorph/state",
+  "runtime_config": "/etc/evorph/runtime.json",
+  "openssl": null,
+  "service": {
+    "mode": "live",
+    "origin": "https://PUBLIC-HOSTNAME.EXAMPLE",
+    "request_timeout": 30,
+    "limits": {
+      "session_seconds": 3600,
+      "identity_per_window": 20,
+      "write_per_window": 50,
+      "read_per_window": 1000,
+      "window_seconds": 60,
+      "page_limit": 100
+    }
+  },
+  "api": {
+    "listen_host": "127.0.0.1",
+    "listen_port": 8080
+  },
+  "transport": {
+    "enabled": true,
+    "credential_path": "/etc/evorph/PROVIDER-CREDENTIAL-FILENAME.EXAMPLE"
+  },
+  "channels": {
+    "seeker": {
+      "provider": "PROVIDER-PLACEHOLDER",
+      "model_id": "MODEL-PLACEHOLDER",
+      "provider_name": "PROVIDER-NAME-PLACEHOLDER",
+      "price": {
+        "input_micros_per_million": 1000000,
+        "output_micros_per_million": 1000000
+      },
+      "max_input_tokens": 1000000,
+      "max_output_tokens": 10000,
+      "margin_tokens": 0,
+      "timeout_seconds": 30,
+      "meter_basis": "provider-context-bound.v1"
+    },
+    "keeper": {
+      "provider": "PROVIDER-PLACEHOLDER",
+      "model_id": "MODEL-PLACEHOLDER",
+      "provider_name": "PROVIDER-NAME-PLACEHOLDER",
+      "price": {
+        "input_micros_per_million": 1000000,
+        "output_micros_per_million": 1000000
+      },
+      "max_input_tokens": 1000000,
+      "max_output_tokens": 10000,
+      "margin_tokens": 0,
+      "timeout_seconds": 30,
+      "meter_basis": "provider-context-bound.v1"
+    }
+  }
+}

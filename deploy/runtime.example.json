@@ -1,0 +1,12 @@
+{
+  "limits": {
+    "queue_total": 64,
+    "queue_per_submitter": 8,
+    "max_attempts": 2,
+    "lease_seconds": 1800,
+    "storage_bytes": 4294967296,
+    "min_free_bytes": 1073741824,
+    "artifact_bytes": 16777216
+  },
+  "spending": null
+}

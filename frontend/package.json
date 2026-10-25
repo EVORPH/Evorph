@@ -1,0 +1,11 @@
+{
+  "name": "evorph-transition-frontend",
+  "private": true,
+  "version": "0.4.0",
+  "type": "module",
+  "scripts": {
+    "dev": "python3 -m http.server 4174 --bind 127.0.0.1 --directory dist",
+    "check": "node --check dist/app.js && node --check dist/effects.js && node --check dist/common.js && node --check dist/docs.js && node --check dist/experience-data.js && node --check dist/site-config.js && node --check dist/research-contract.js && node --check dist/research-adapter.js && node --check dist/research-view.js && node --check dist/research-auto-update.js && node --check dist/examples/research-preview.js && node --check dist/research-status.js && node --check dist/service-client.js && node --check dist/contribution.js",
+    "test": "node --test tests/*.test.mjs"
+  }
+}

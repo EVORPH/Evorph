@@ -1,0 +1,21 @@
+EVORPH — Asset credits
+
+Original website layout, SVG geometry and procedural three.js sculptures created for this project.
+One context photograph shows the Advanced Quantum Testbed dilution refrigerator at Berkeley Lab.
+Source: National Quantum Initiative image gallery, https://www.quantum.gov/quantum-image-gallery/.
+The homepage includes attribution. The photograph does not depict equipment owned or operated by EVORPH.
+
+Vendored three.js modules report revision 186.
+License: assets/vendor/THREE-LICENSE.txt (MIT).
+
+Sora and IBM Plex Mono are self-hosted.
+Licenses: assets/fonts/sora-OFL.txt and assets/fonts/ibmplexmono-OFL.txt (SIL OFL).
+
+Recorded evidence in data/ is a byte-preserved copy of the project's probe-03 public artifacts.
+The walkthrough text and animated forms are labeled illustrations, not live model output.
+
+Visual references inspected on 2026-10-20:
+https://precedent.markets/
+https://www.predictouts.xyz/
+Used as composition/motion references; their text, artwork and code were not copied.
+References to Awwwards, Webby Awards and FWA do not imply awards, affiliation or endorsement received by EVORPH.

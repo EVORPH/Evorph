@@ -1,0 +1,310 @@
+#!/usr/bin/env python3
+"""Local feasibility experiment. Synthetic faults, real signatures, no model API.
+
+This is a bounded fixture, not a public service or a production verifier.
+Private experiment keys live only in a TemporaryDirectory. Output contains
+public keys, messages, signatures and observations for inspection.
+"""
+import argparse
+import base64
+import hashlib
+import json
+import math
+import platform
+import resource
+import shutil
+import statistics
+import subprocess
+import tempfile
+import time
+from pathlib import Path
+
+DOMAIN = "EVORPH/retired-key/probe-v1"
+ACCOUNT = "experiment-account"
+CONTEXT = "EVORPH-S1-v1"
+LEGACY = "ECDSA-P256-SHA256"
+PQ = "ML-DSA-44"
+
+
+def encode(obj):
+    return json.dumps(obj, sort_keys=True, separators=(",", ":"),
+                      ensure_ascii=True, allow_nan=False).encode("ascii")
+
+
+def b64(data):
+    return base64.b64encode(data).decode("ascii")
+
+
+class Crypto:
+    def __init__(self, binary, scratch):
+        self.binary, self.scratch = binary, scratch
+        self.timings = {}
+        self.keys = {}
+
+    def run(self, label, args, verify=False):
+        start = time.perf_counter()
+        result = subprocess.run(
+            [self.binary] + args, capture_output=True, timeout=10,
+            cwd=str(self.scratch),
+        )
+        self.timings.setdefault(label, []).append(time.perf_counter() - start)
+        if not verify and result.returncode != 0:
+            raise RuntimeError(result.stderr.decode(errors="replace"))
+        return result
+
+    def keygen(self, name, algorithm):
+        private, public = self.scratch / (name + ".key"), self.scratch / (name + ".pub")
+        args = ["genpkey", "-algorithm",
+                "EC" if algorithm == LEGACY else "ML-DSA-44"]
+        if algorithm == LEGACY:
+            args += ["-pkeyopt", "ec_paramgen_curve:P-256"]
+        self.run("keygen:" + algorithm, args + ["-out", str(private)])
+        self.run("public-export", ["pkey", "-in", str(private),
+                                  "-pubout", "-out", str(public)])
+        self.keys[name] = (private, public, algorithm)
+        return public.read_bytes()
+
+    def signature_args(self, name, context):
+        if self.keys[name][2] == LEGACY:
+            return ["-rawin", "-digest", "sha256"]
+        return ["-rawin", "-pkeyopt", "context-string:" + context]
+
+    def sign(self, name, body, context=CONTEXT):
+        # Called only by fixed fixture setup, never by an uploaded candidate.
+        msg, sig = self.scratch / "message.bin", self.scratch / "signature.bin"
+        msg.write_bytes(encode(body))
+        self.run("sign:" + self.keys[name][2],
+                 ["pkeyutl", "-sign", "-inkey", str(self.keys[name][0]),
+                  "-in", str(msg), "-out", str(sig)] +
+                 self.signature_args(name, context))
+        return sig.read_bytes()
+
+    def verify(self, name, body, signature, context=CONTEXT):
+        msg, sig = self.scratch / "message.bin", self.scratch / "signature.bin"
+        msg.write_bytes(encode(body))
+        sig.write_bytes(signature)
+        r = self.run(
+            "verify:" + self.keys[name][2],
+            ["pkeyutl", "-verify", "-pubin", "-inkey", str(self.keys[name][1]),
+             "-in", str(msg), "-sigfile", str(sig)] +
+            self.signature_args(name, context), verify=True)
+        # A missing file, unavailable provider or invalid CLI option must not
+        # count as a successfully detected bad signature.
+        if r.returncode != 0 and not (
+                r.returncode == 1 and b"Signature Verification Failure" in r.stdout):
+            raise RuntimeError("Verifier execution error: " +
+                               r.stderr.decode(errors="replace"))
+        return {"valid": r.returncode == 0, "returncode": r.returncode,
+                "status": "valid" if r.returncode == 0 else "invalid_signature",
+                "stdout": r.stdout.decode(errors="replace").strip(),
+                "stderr": r.stderr.decode(errors="replace").strip()}
+
+
+def operation(algorithm=PQ, key_id="pq", epoch=1, nonce="op-1", **overrides):
+    body = {"domain": DOMAIN, "account": ACCOUNT, "action": "set_label",
+            "algorithm": algorithm, "key_id": key_id, "epoch": epoch,
+            "nonce": nonce, "value": "experimental"}
+    body.update(overrides)
+    return body
+
+
+def fixed_accept(body, signature_valid, used_nonces):
+    """Pinned acceptance contract for PQ_ACTIVE; distinct from crypto validity."""
+    allowed = {"domain", "account", "action", "algorithm", "key_id",
+               "epoch", "nonce", "value"}
+    if set(body) != allowed:
+        return False
+    return (body["domain"] == DOMAIN and body["account"] == ACCOUNT
+            and body["action"] == "set_label" and body["algorithm"] == PQ
+            and body["key_id"] == "pq" and type(body["epoch"]) is int
+            and body["epoch"] == 1 and type(body["nonce"]) is str
+            and bool(body["nonce"]) and body["nonce"] not in used_nonces
+            and type(body["value"]) is str and signature_valid)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--openssl", default=shutil.which("openssl"))
+    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--benchmark-iterations", type=int, default=25)
+    opts = parser.parse_args()
+    opts.output = opts.output.resolve()
+    if not opts.openssl or not 1 <= opts.benchmark_iterations <= 100:
+        parser.error("OpenSSL required; benchmark iterations must be 1..100.")
+    if opts.output.exists():
+        parser.error("Output must be a new directory, to preserve earlier evidence.")
+    opts.output.mkdir(parents=True)
+    probe_source = Path(__file__).read_bytes()
+    (opts.output / "probe-source.py.txt").write_bytes(probe_source)
+    started = time.perf_counter()
+    observations, fixtures, transitions = [], [], []
+    with tempfile.TemporaryDirectory(prefix="private-", dir=str(opts.output)) as tmp:
+        scratch = Path(tmp)
+        crypto = Crypto(opts.openssl, scratch)
+        version = crypto.run("version", ["version"]).stdout.decode().strip()
+        pubs = {name: crypto.keygen(name, alg)
+                for name, alg in [("legacy", LEGACY), ("pq", PQ)]}
+        for name, value in pubs.items():
+            (opts.output / (name + "-public.pem")).write_bytes(value)
+        key_hash = hashlib.sha256(pubs["pq"]).hexdigest()
+        phase = "LEGACY"
+        late = operation(LEGACY, "legacy", 0, "late-old")
+        late_signature = crypto.sign("legacy", late)
+        pre_migration_events = [{
+            "event": "sign-and-hold-request", "phase": phase, "body": late,
+            "signature_b64": b64(late_signature),
+        }]
+        # Fixed authorized ceremony. Both signatures bind the same new key.
+        for action, before, after in [
+                ("prepare", "LEGACY", "PREPARED"),
+                ("confirm", "PREPARED", "PQ_ACTIVE")]:
+            body = {"domain": DOMAIN, "account": ACCOUNT, "action": action,
+                    "from_epoch": 0, "to_epoch": 1, "new_algorithm": PQ,
+                    "new_key_sha256": key_hash, "nonce": action + "-1"}
+            signatures = {name: crypto.sign(name, body) for name in pubs}
+            verdicts = {name: crypto.verify(name, body, signatures[name])
+                        for name in pubs}
+            accepted = phase == before and all(v["valid"] for v in verdicts.values())
+            observations.append({"id": action + "-authorized",
+                                 "expected_accept": True, "actual_accept": accepted,
+                                 "passed": accepted})
+            if not accepted:
+                raise RuntimeError("Authorized ceremony failed")
+            phase = after
+            transitions.append({"before": before, "after": after, "body": body,
+                                "signatures_b64": {k: b64(v) for k, v in signatures.items()},
+                                "verification": verdicts})
+
+        used = set()
+
+        def check(case_id, body, signature, signer, expected,
+                  context=CONTEXT, buggy=None, fallback=None, consume=False,
+                  expected_signature_valid=None):
+            primary = crypto.verify(signer, body, signature, context)
+            fallback_attempted = fallback is not None and not primary["valid"]
+            fallback_result = (crypto.verify("legacy", body, fallback)
+                               if fallback_attempted else None)
+            accepted = fixed_accept(body, primary["valid"], used)
+            # Bound key selection to registered metadata, not only the message.
+            accepted = accepted and signer == "pq"
+            observed_bug = None
+            if buggy == "ignore-retirement":
+                observed_bug = primary["valid"]
+            elif buggy == "silent-fallback":
+                observed_bug = primary["valid"] or (
+                    fallback_result is not None and fallback_result["valid"])
+            passed = accepted == expected
+            if expected_signature_valid is not None:
+                passed = passed and primary["valid"] == expected_signature_valid
+            if buggy:
+                passed = passed and observed_bug is True and accepted is False
+            observations.append({
+                "id": case_id, "expected_accept": expected, "actual_accept": accepted,
+                "signature_valid": primary["valid"], "synthetic_bug_accept": observed_bug,
+                "fallback_attempted_by_synthetic_bug": fallback_attempted,
+                "passed": passed,
+            })
+            fixtures.append({
+                "id": case_id, "phase": phase, "used_nonces_before": sorted(used),
+                "body": body, "message_b64": b64(encode(body)), "signer": signer,
+                "verify_context": context, "signature_b64": b64(signature),
+                "fallback_signature_b64": b64(fallback) if fallback else None,
+                "primary_verification": primary, "fallback_verification": fallback_result,
+                "fault_origin": "self-built calibration" if buggy else "fixed test",
+            })
+            if accepted and consume:
+                used.add(body["nonce"])
+
+        body = operation()
+        signature = crypto.sign("pq", body)
+        check("pq-normal-operation", body, signature, "pq", True, consume=True,
+              expected_signature_valid=True)
+        check("pq-replay-rejected", body, signature, "pq", False,
+              expected_signature_valid=True)
+        check("retired-key-delayed-request", late, late_signature,
+              "legacy", False, buggy="ignore-retirement", expected_signature_valid=True)
+        fallback_body = operation(nonce="fallback")
+        good = crypto.sign("pq", fallback_body)
+        damaged = bytes([good[0] ^ 1]) + good[1:]
+        check("invalid-pq-silent-legacy-fallback", fallback_body, damaged, "pq", False,
+              buggy="silent-fallback", fallback=crypto.sign("legacy", fallback_body),
+              expected_signature_valid=False)
+        check("wrong-pq-context", fallback_body, good, "pq", False,
+              context="EVORPH-WRONG-CONTEXT", expected_signature_valid=False)
+        check("tampered-message", dict(fallback_body, value="changed"), good,
+              "pq", False, expected_signature_valid=False)
+        for name, changes in [
+                ("wrong-domain", {"domain": "other-domain"}),
+                ("wrong-account", {"account": "other-account"}),
+                ("wrong-epoch", {"epoch": 0}),
+                ("wrong-algorithm-binding", {"algorithm": LEGACY}),
+                ("wrong-key-binding", {"key_id": "legacy"})]:
+            negative = operation(nonce=name, **changes)
+            # These are controlled authorized fixture outputs for verifier tests.
+            # They do not grant a SEEKER access to the new private key.
+            check(name, negative, crypto.sign("pq", negative), "pq", False,
+                  expected_signature_valid=True)
+
+        bench_start = time.perf_counter()
+        bench_sign, bench_verify = [], []
+        for _ in range(opts.benchmark_iterations):
+            t = time.perf_counter()
+            s = crypto.sign("pq", fallback_body)
+            bench_sign.append(time.perf_counter() - t)
+            t = time.perf_counter()
+            result = crypto.verify("pq", fallback_body, s)
+            bench_verify.append(time.perf_counter() - t)
+            if not result["valid"]:
+                raise RuntimeError("Benchmark roundtrip failed")
+        bench_seconds = time.perf_counter() - bench_start
+
+        def summary(values):
+            return {"n": len(values), "median_ms": round(statistics.median(values)*1000, 3),
+                    "p95_ms": round(sorted(values)[math.ceil(len(values)*0.95)-1]*1000, 3)}
+
+        report = {
+            "kind": "local_feasibility_probe_not_production_or_ai_evaluation",
+            "protocol": DOMAIN, "openssl": version,
+            "python": platform.python_version(), "os": platform.system(),
+            "architecture": platform.machine(), "phase": phase,
+            "probe_sha256": hashlib.sha256(probe_source).hexdigest(),
+            "algorithms": [LEGACY, PQ], "context": CONTEXT,
+            "case_count": len(observations),
+            "passed_count": sum(x["passed"] for x in observations),
+            "cases": observations, "transitions": transitions,
+            "pre_migration_events": pre_migration_events,
+            "benchmarks": {"includes_cli_startup_and_file_io": True,
+                           "sign": summary(bench_sign), "verify": summary(bench_verify),
+                           "roundtrip_batch_seconds": round(bench_seconds, 4)},
+            "pq_signature_bytes": len(good),
+            "public_key_pem_bytes": {k: len(v) for k, v in pubs.items()},
+            "api_calls": 0, "installed_dependencies": 0,
+            "private_keys_exported": False,
+            "limitations": [
+                "No independent NIST vector validation; roundtrips use one implementation.",
+                "No arbitrary trace engine, independent state-machine oracle or AI loop.",
+                "Synthetic faults do not establish vulnerabilities in external products.",
+                "Fixed new-key signatures are trusted fixtures, not attacker capabilities.",
+                "Mac CLI latency is not Linux VPS throughput or full-service memory usage.",
+                "No production release/build security audit; existing local binary only.",
+            ],
+        }
+    # All temporary private keys have been removed before public artifacts are saved.
+    report["wall_seconds"] = round(time.perf_counter() - started, 4)
+    units = 1024*1024 if platform.system() == "Darwin" else 1024
+    report["parent_peak_rss_mib"] = round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / units, 3)
+    report["child_peak_rss_mib_os_reported"] = round(resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss / units, 3)
+    (opts.output / "report.json").write_text(json.dumps(report, indent=2) + "\n")
+    (opts.output / "fixtures.json").write_text(json.dumps(fixtures, indent=2) + "\n")
+    manifest = {p.name: hashlib.sha256(p.read_bytes()).hexdigest()
+                for p in opts.output.iterdir() if p.is_file()}
+    (opts.output / "sha256.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    print(json.dumps({k: report[k] for k in
+                      ["case_count", "passed_count", "wall_seconds", "benchmarks",
+                       "parent_peak_rss_mib", "child_peak_rss_mib_os_reported"]}, indent=2))
+    if report["passed_count"] != report["case_count"]:
+        raise SystemExit(1)
+
+
+if __name__ == "__main__":
+    main()

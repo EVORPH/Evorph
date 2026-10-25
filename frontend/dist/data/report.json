@@ -1,0 +1,250 @@
+{
+  "kind": "local_feasibility_probe_not_production_or_ai_evaluation",
+  "protocol": "EVORPH/retired-key/probe-v1",
+  "openssl": "OpenSSL 3.6.3 9 Jun 2026 (Library: OpenSSL 3.6.3 9 Jun 2026)",
+  "python": "3.9.6",
+  "os": "Darwin",
+  "architecture": "arm64",
+  "phase": "PQ_ACTIVE",
+  "probe_sha256": "50136b307d03b288ac421d2409f4b045a01f80a50dbf173611b78dc07cbfb618",
+  "algorithms": [
+    "ECDSA-P256-SHA256",
+    "ML-DSA-44"
+  ],
+  "context": "EVORPH-S1-v1",
+  "case_count": 13,
+  "passed_count": 13,
+  "cases": [
+    {
+      "id": "prepare-authorized",
+      "expected_accept": true,
+      "actual_accept": true,
+      "passed": true
+    },
+    {
+      "id": "confirm-authorized",
+      "expected_accept": true,
+      "actual_accept": true,
+      "passed": true
+    },
+    {
+      "id": "pq-normal-operation",
+      "expected_accept": true,
+      "actual_accept": true,
+      "signature_valid": true,
+      "synthetic_bug_accept": null,
+      "fallback_attempted_by_synthetic_bug": false,
+      "passed": true
+    },
+    {
+      "id": "pq-replay-rejected",
+      "expected_accept": false,
+      "actual_accept": false,
+      "signature_valid": true,
+      "synthetic_bug_accept": null,
+      "fallback_attempted_by_synthetic_bug": false,
+      "passed": true
+    },
+    {
+      "id": "retired-key-delayed-request",
+      "expected_accept": false,
+      "actual_accept": false,
+      "signature_valid": true,
+      "synthetic_bug_accept": true,
+      "fallback_attempted_by_synthetic_bug": false,
+      "passed": true
+    },
+    {
+      "id": "invalid-pq-silent-legacy-fallback",
+      "expected_accept": false,
+      "actual_accept": false,
+      "signature_valid": false,
+      "synthetic_bug_accept": true,
+      "fallback_attempted_by_synthetic_bug": true,
+      "passed": true
+    },
+    {
+      "id": "wrong-pq-context",
+      "expected_accept": false,
+      "actual_accept": false,
+      "signature_valid": false,
+      "synthetic_bug_accept": null,
+      "fallback_attempted_by_synthetic_bug": false,
+      "passed": true
+    },
+    {
+      "id": "tampered-message",
+      "expected_accept": false,
+      "actual_accept": false,
+      "signature_valid": false,
+      "synthetic_bug_accept": null,
+      "fallback_attempted_by_synthetic_bug": false,
+      "passed": true
+    },
+    {
+      "id": "wrong-domain",
+      "expected_accept": false,
+      "actual_accept": false,
+      "signature_valid": true,
+      "synthetic_bug_accept": null,
+      "fallback_attempted_by_synthetic_bug": false,
+      "passed": true
+    },
+    {
+      "id": "wrong-account",
+      "expected_accept": false,
+      "actual_accept": false,
+      "signature_valid": true,
+      "synthetic_bug_accept": null,
+      "fallback_attempted_by_synthetic_bug": false,
+      "passed": true
+    },
+    {
+      "id": "wrong-epoch",
+      "expected_accept": false,
+      "actual_accept": false,
+      "signature_valid": true,
+      "synthetic_bug_accept": null,
+      "fallback_attempted_by_synthetic_bug": false,
+      "passed": true
+    },
+    {
+      "id": "wrong-algorithm-binding",
+      "expected_accept": false,
+      "actual_accept": false,
+      "signature_valid": true,
+      "synthetic_bug_accept": null,
+      "fallback_attempted_by_synthetic_bug": false,
+      "passed": true
+    },
+    {
+      "id": "wrong-key-binding",
+      "expected_accept": false,
+      "actual_accept": false,
+      "signature_valid": true,
+      "synthetic_bug_accept": null,
+      "fallback_attempted_by_synthetic_bug": false,
+      "passed": true
+    }
+  ],
+  "transitions": [
+    {
+      "before": "LEGACY",
+      "after": "PREPARED",
+      "body": {
+        "domain": "EVORPH/retired-key/probe-v1",
+        "account": "experiment-account",
+        "action": "prepare",
+        "from_epoch": 0,
+        "to_epoch": 1,
+        "new_algorithm": "ML-DSA-44",
+        "new_key_sha256": "56a6fc1a06bee83cec86ed113b889643abbe9c967150b6ec7a0807618d94840a",
+        "nonce": "prepare-1"
+      },
+      "signatures_b64": {
+        "legacy": "MEUCIQCHBMpo4mTuC2m/ET5pndiTGx/AUbfVim7biDBIZvZ/mwIgDvsYSPT1pQk7zo2+Nfv9Te7wZ1fI94xzUbVSwISFWJE=",
+        "pq": "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"
+      },
+      "verification": {
+        "legacy": {
+          "valid": true,
+          "returncode": 0,
+          "status": "valid",
+          "stdout": "Signature Verified Successfully",
+          "stderr": ""
+        },
+        "pq": {
+          "valid": true,
+          "returncode": 0,
+          "status": "valid",
+          "stdout": "Signature Verified Successfully",
+          "stderr": ""
+        }
+      }
+    },
+    {
+      "before": "PREPARED",
+      "after": "PQ_ACTIVE",
+      "body": {
+        "domain": "EVORPH/retired-key/probe-v1",
+        "account": "experiment-account",
+        "action": "confirm",
+        "from_epoch": 0,
+        "to_epoch": 1,
+        "new_algorithm": "ML-DSA-44",
+        "new_key_sha256": "56a6fc1a06bee83cec86ed113b889643abbe9c967150b6ec7a0807618d94840a",
+        "nonce": "confirm-1"
+      },
+      "signatures_b64": {
+        "legacy": "MEQCICF9yXxzn7Fs+IJSTDlsR3zmTtO6Xouc/Mym8HeqrPTDAiAdjNVByPZ79cMoH+RqhPXCUhiDuuKTj31JIvTb+k6uNA==",
+        "pq": "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"
+      },
+      "verification": {
+        "legacy": {
+          "valid": true,
+          "returncode": 0,
+          "status": "valid",
+          "stdout": "Signature Verified Successfully",
+          "stderr": ""
+        },
+        "pq": {
+          "valid": true,
+          "returncode": 0,
+          "status": "valid",
+          "stdout": "Signature Verified Successfully",
+          "stderr": ""
+        }
+      }
+    }
+  ],
+  "pre_migration_events": [
+    {
+      "event": "sign-and-hold-request",
+      "phase": "LEGACY",
+      "body": {
+        "domain": "EVORPH/retired-key/probe-v1",
+        "account": "experiment-account",
+        "action": "set_label",
+        "algorithm": "ECDSA-P256-SHA256",
+        "key_id": "legacy",
+        "epoch": 0,
+        "nonce": "late-old",
+        "value": "experimental"
+      },
+      "signature_b64": "MEUCIFOeQORYLFAXZkZFdUKmc7zSALXoyYQfKF7iQzl0CSytAiEA9CFUH/sQGBNILOKC8SdfYxxgcAJv2PGBFqmD/bXNYX8="
+    }
+  ],
+  "benchmarks": {
+    "includes_cli_startup_and_file_io": true,
+    "sign": {
+      "n": 25,
+      "median_ms": 5.812,
+      "p95_ms": 6.098
+    },
+    "verify": {
+      "n": 25,
+      "median_ms": 5.301,
+      "p95_ms": 5.428
+    },
+    "roundtrip_batch_seconds": 0.2772
+  },
+  "pq_signature_bytes": 2420,
+  "public_key_pem_bytes": {
+    "legacy": 178,
+    "pq": 1860
+  },
+  "api_calls": 0,
+  "installed_dependencies": 0,
+  "private_keys_exported": false,
+  "limitations": [
+    "No independent NIST vector validation; roundtrips use one implementation.",
+    "No arbitrary trace engine, independent state-machine oracle or AI loop.",
+    "Synthetic faults do not establish vulnerabilities in external products.",
+    "Fixed new-key signatures are trusted fixtures, not attacker capabilities.",
+    "Mac CLI latency is not Linux VPS throughput or full-service memory usage.",
+    "No production release/build security audit; existing local binary only."
+  ],
+  "wall_seconds": 0.4611,
+  "parent_peak_rss_mib": 16.422,
+  "child_peak_rss_mib_os_reported": 5.719
+}
