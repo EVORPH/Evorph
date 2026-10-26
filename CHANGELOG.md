@@ -15,6 +15,9 @@ https://evorph.net. Detailed evidence lives in VERIFICATION.md.
   recorded test counts and re-ran the full backend suite (216 tests).
 - Added SECURITY.md, CONTRIBUTING.md, and this changelog; filled in the
   LICENSE copyright line.
+- Enabled continuous integration: every push runs the backend suites (against
+  a self-built OpenSSL with ML-DSA support) and the frontend checks and tests;
+  the first green run completed on 2026-10-26.
 - Updated the site status copy so it no longer names a round count that would
   go stale.
 
