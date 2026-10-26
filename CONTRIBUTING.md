@@ -20,7 +20,6 @@ no payment are involved.
 2. Backend: `cd backend/tests && PYTHONPATH=..:. python3 -m unittest discover -p 'test_*.py' -v`.
    This requires OpenSSL 3.5 or newer with ML-DSA support on `PATH`, or named
    by `EVORPH_OPENSSL`. Frontend: `npm run check` and `npm test` in `frontend/`.
-   Continuous integration runs both suites on every push.
 3. Keep the public tree clean: no personal data, no local absolute paths, no
    credentials, no generated state files.
 4. Describe what the change does and why, and name the verification record it

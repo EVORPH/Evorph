@@ -13,8 +13,8 @@ https://evorph.net. Detailed evidence lives in VERIFICATION.md.
 - Stated the official-vector applicability scope (15 of 180, 3 expected
   passes) wherever the published test vectors are described; corrected the
   recorded test counts and re-ran the full backend suite (216 tests).
-- Added continuous integration, SECURITY.md, CONTRIBUTING.md, and this
-  changelog; filled in the LICENSE copyright line.
+- Added SECURITY.md, CONTRIBUTING.md, and this changelog; filled in the
+  LICENSE copyright line.
 - Updated the site status copy so it no longer names a round count that would
   go stale.
 
