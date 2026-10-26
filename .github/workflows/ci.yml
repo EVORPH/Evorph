@@ -18,14 +18,15 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/openssl-3.5
-          key: openssl-3.5.7-ubuntu-latest
+          key: openssl-3.5.7-ubuntu-latest-r1
       - name: Build OpenSSL 3.5.7 with ML-DSA support
         if: steps.cache-openssl.outputs.cache-hit != 'true'
         run: |
           curl -fsSL -o openssl.tar.gz https://github.com/openssl/openssl/releases/download/openssl-3.5.7/openssl-3.5.7.tar.gz
           tar xzf openssl.tar.gz
           cd openssl-3.5.7
-          ./config --prefix="$HOME/openssl-3.5" shared
+          PREFIX="$HOME/openssl-3.5"
+          ./config --prefix="$PREFIX" --libdir=lib shared "-Wl,-rpath,$PREFIX/lib"
           make -j"$(nproc)"
           make install_sw
       - name: Check ML-DSA support and export the binary path
