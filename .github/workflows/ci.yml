@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Cache OpenSSL 3.5.7
+        id: cache-openssl
+        uses: actions/cache@v4
+        with:
+          path: ~/openssl-3.5
+          key: openssl-3.5.7-ubuntu-latest
+      - name: Build OpenSSL 3.5.7 with ML-DSA support
+        if: steps.cache-openssl.outputs.cache-hit != 'true'
+        run: |
+          curl -fsSL -o openssl.tar.gz https://github.com/openssl/openssl/releases/download/openssl-3.5.7/openssl-3.5.7.tar.gz
+          tar xzf openssl.tar.gz
+          cd openssl-3.5.7
+          ./config --prefix="$HOME/openssl-3.5" shared
+          make -j"$(nproc)"
+          make install_sw
+      - name: Check ML-DSA support and export the binary path
+        run: |
+          "$HOME/openssl-3.5/bin/openssl" list -signature-algorithms | grep -c ML-DSA-44
+          echo "EVORPH_OPENSSL=$HOME/openssl-3.5/bin/openssl" >> "$GITHUB_ENV"
+      - name: Run backend suites
+        run: |
+          cd backend/tests
+          PYTHONPATH=..:. PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -p 'test_*.py'
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install
+      - run: npm run check
+      - run: npm test
