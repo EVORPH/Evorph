@@ -2,7 +2,7 @@ import { motion, announce } from './common.js?v=public-records-5';
 import { createResearchAdapter } from './research-adapter.js?v=public-records-5';
 import { PHASES, validateExperimentPage, validateRecordPage, mergeRecords, safePublicHref } from './research-contract.js?v=public-research-v2-1';
 import { EXPERIMENT_STATE_LABELS, renderResearchStatus } from './research-status.js';
-import { researchAutoUpdateSeconds } from './site-config.js?v=m12-1';
+import { researchAutoUpdateSeconds } from './site-config.js?v=m13-1';
 import { autoUpdateSeconds, createAutoUpdater } from './research-auto-update.js?v=m11-1';
 
 const $ = id => document.getElementById(id);

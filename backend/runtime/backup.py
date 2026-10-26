@@ -69,7 +69,9 @@ def create_backup(store, destination):
                 if copied != {'sha256': row['artifact_id'], 'size': row['size']}:
                     raise InputError('Backup artifact differs from its reference.')
             (destination / 'config.json').write_bytes(canonical(asdict(store.limits)))
-        files = {str(path.relative_to(destination)): file_hash(path)
+        # Manifest names are slash-separated on every platform so a backup also
+        # restores under an OS whose path separator differs from the writer's.
+        files = {path.relative_to(destination).as_posix(): file_hash(path)
                  for path in destination.rglob('*') if path.is_file()}
         with (destination / 'manifest.json').open('xb') as output:
             output.write(canonical({'schema_version': 'backup.v1', 'files': files}))

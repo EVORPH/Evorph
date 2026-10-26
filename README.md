@@ -1,6 +1,6 @@
 # EVORPH
 
-A public, participatory research system for post-quantum migration. Two model roles do the work in the open: a **seeker** proposes hypotheses about a migration step, and a **keeper** proposes repairs to a candidate. Neither role judges anything. A fixed, deterministic program judges: it runs the candidate against published test vectors and records what actually happened. Players contribute hypotheses and repairs, and accepted contributions become part of the public record.
+A public, participatory research system for post-quantum migration. Two model roles do the work in the open: a **seeker** proposes hypotheses about a migration step, and a **keeper** proposes repairs to a candidate. Neither role judges anything. A fixed, deterministic program judges: it runs the candidate against published test vectors and records what actually happened. Of the 180 bundled official NIST vectors, the 15 for ML-DSA-44 with the external signature interface in pure mode are the ones inside the harness's fixed capabilities, and 3 of those 15 are expected to pass; the other 165 are excluded by design, and every verification run reports both counts. Players contribute hypotheses and repairs, and accepted contributions become part of the public record.
 
 The first chapter is **legacy key retirement**.
 
