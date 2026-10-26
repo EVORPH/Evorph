@@ -94,6 +94,16 @@ class OpenRouterTests(unittest.TestCase):
         wire = parse_json(http.sent[0][2], 131072)
         self.assertIn('search-strategy.v1', canonical(wire).decode())
 
+    def test_strategy_parent_ships_as_a_wire_const_without_touching_the_base_schema(self):
+        channel, http = self.channel((200, canonical(completion())))
+        outcome = channel.request('seeker', 'pinned-request', self.segments, strategy_parent='search-baseline-v1')
+        self.assertEqual(outcome.kind, 'accepted')
+        wire = parse_json(http.sent[0][2], 131072)
+        strategy = wire['response_format']['json_schema']['schema']['properties']['strategy']
+        self.assertEqual(strategy['properties']['parent_id'], {'const': 'search-baseline-v1'})
+        base = channel.transport.schemas['seeker']['properties']['strategy']['properties']['parent_id']
+        self.assertIn('anyOf', base)
+
     def test_wire_contract_pins_provider_and_measures_entire_payload(self):
         measured = []
         def meter(raw):

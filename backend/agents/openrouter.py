@@ -3,7 +3,7 @@ from decimal import Decimal, InvalidOperation, ROUND_CEILING
 import re
 import subprocess
 
-from evorph.contracts import InputError, b64, canonical, digest, exact, integer, parse_json, unb64
+from evorph.contracts import InputError, b64, canonical, digest, exact, identifier, integer, parse_json, unb64
 from runtime.store import ConflictError
 from .channel import (MAX_REQUEST_BYTES, MAX_RESPONSE_BYTES, ModelChannel, RESPONSE_SCHEMA,
                       TransportDisconnected, TransportTimeout)
@@ -156,6 +156,16 @@ class OpenRouterTransport:
         context = {'spec_digest': envelope['spec_digest'], 'expected_parent': envelope['expected_parent'],
                    'parent_digest': envelope['parent_digest'],
                    'data': [item for item in envelope['segments'] if item['name'] != 'task_rules']}
+        schema = self.schemas[role]
+        strategy_parent = envelope.get('strategy_parent')
+        if strategy_parent is not None:
+            # The inherited search method's identity is fixed input, not a model choice:
+            # pin it the same way the wire schema pins spec_digest.
+            if role != 'seeker':
+                raise InputError('Only the seeker request pins a strategy parent.')
+            identifier(strategy_parent)
+            schema = deepcopy(schema)
+            schema['properties']['strategy']['properties']['parent_id'] = {'const': strategy_parent}
         request = {'model': self.spec.model_id, 'stream': False, 'max_tokens': envelope['max_output_tokens'],
                    'provider': {'only': [self.spec.provider], 'order': [self.spec.provider],
                                 'allow_fallbacks': False, 'require_parameters': True, 'data_collection': 'deny',
@@ -164,7 +174,7 @@ class OpenRouterTransport:
                    'messages': [{'role': 'system', 'content': rules},
                                 {'role': 'user', 'content': canonical(context).decode()}],
                    'response_format': {'type': 'json_schema', 'json_schema':
-                                       {'name': role, 'strict': True, 'schema': self.schemas[role]}}}
+                                       {'name': role, 'strict': True, 'schema': schema}}}
         body = canonical(request)
         if len(body) > MAX_REQUEST_BYTES:
             raise InputError('Provider request exceeds encoding bounds.')

@@ -163,9 +163,13 @@ class ModelChannel:
             raise InputError('Task rules are required.')
         return body
 
-    def prepared(self, role, task_key, segments, expected_parent=None):
+    def prepared(self, role, task_key, segments, expected_parent=None, strategy_parent=None):
         body = self.segments(role, task_key, segments)
         parent_digest = None
+        if strategy_parent is not None:
+            if role != 'seeker':
+                raise InputError('Only the seeker request pins a strategy parent.')
+            identifier(strategy_parent)
         if role == 'keeper' or expected_parent is not None:
             identifier(expected_parent)
             parent = self.accounting.store.connection.execute(
@@ -177,6 +181,7 @@ class ModelChannel:
                     'model_id': self.spec.model_id, 'role': role, 'task_key': task_key,
                     'spec_digest': SPEC_DIGEST, 'structured_output': True, 'allow_fallback': False,
                     'expected_parent': expected_parent, 'parent_digest': parent_digest,
+                    'strategy_parent': strategy_parent,
                     'max_output_tokens': self.spec.max_output_tokens, 'segments': body}
         raw = canonical(envelope)
         if len(raw) > MAX_REQUEST_BYTES:
@@ -192,8 +197,8 @@ class ModelChannel:
                 'request_key': 'req-' + digest(canonical({'role': role, 'task_key': task_key})),
                 'context': digest(canonical({'request_digest': digest(raw), 'measurement': measurement}))}
 
-    def request(self, role, task_key, segments, expected_parent=None):
-        prepared = self.prepared(role, task_key, segments, expected_parent)
+    def request(self, role, task_key, segments, expected_parent=None, strategy_parent=None):
+        prepared = self.prepared(role, task_key, segments, expected_parent, strategy_parent)
         measured, bound = prepared['measured'], prepared['bound']
         if not prepared['allowed']:
             return self.outcome('input_rejected', '', 'input_ceiling', 'not_reserved', measured, bound, 0)

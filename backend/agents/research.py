@@ -299,7 +299,8 @@ class Research:
                 self.store.capacity(len(raw) * 4)
                 self.store.connection.execute('INSERT INTO research_calls VALUES(?,?,?,NULL,NULL)', (batch_id, role, raw))
         parent = target['version_id'] if role == 'keeper' else None
-        result = channel.request(role, batch_id, segments, expected_parent=parent)
+        result = channel.request(role, batch_id, segments, expected_parent=parent,
+                                 strategy_parent=snapshot['method']['version_id'] if role == 'seeker' else None)
         if result.kind == 'duplicate' and result.state in ('settled', 'response_saved'):
             row = channel.accounting.get(result.call_id)
             saved = parse_json(row['response_json'], 1048576)
