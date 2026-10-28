@@ -83,7 +83,8 @@ class OpenRouterTests(unittest.TestCase):
         self.assertEqual(strategy['properties']['reduction_order'], {'enum': ['forward', 'reverse']})
 
     def test_seeker_completion_carries_strategy_and_the_wire_schema_ships_it(self):
-        proposed = {**search_baseline(), 'version_id': 'search-proposed-1', 'parent_id': 'search-baseline-v1'}
+        proposed = {**search_baseline(), 'version_id': 'strategy-' + digest(canonical({'role': 'seeker', 'task_key': 'test-request'})),
+                    'parent_id': 'search-baseline-v1'}
         value = completion()
         value['choices'][0]['message']['content'] = canonical(
             {'plan': plan('prepare'), 'statement': 'Synthetic statement.', 'strategy': proposed}).decode()
@@ -103,6 +104,36 @@ class OpenRouterTests(unittest.TestCase):
         self.assertEqual(strategy['properties']['parent_id'], {'const': 'search-baseline-v1'})
         base = channel.transport.schemas['seeker']['properties']['strategy']['properties']['parent_id']
         self.assertIn('anyOf', base)
+
+    def test_proposal_versions_are_pinned_per_request_without_changing_base_schemas(self):
+        self.store.submit(plan('prepare'), baseline(), 'synthetic-owner', 'parent')
+        channel, _ = self.channel()
+        versions = []
+        for role, key in [('seeker', 'round-a'), ('seeker', 'round-b'), ('keeper', 'round-a')]:
+            kwargs = {'expected_parent': 'baseline-v1'} if role == 'keeper' else {'strategy_parent': 'search-baseline-v1'}
+            prepared = channel.prepared(role, key, self.segments, **kwargs)
+            wire = parse_json(channel.transport.prepare(prepared['raw']), 131072)
+            field = 'strategy' if role == 'seeker' else 'policy'
+            version = wire['response_format']['json_schema']['schema']['properties'][field]['properties']['version_id']['const']
+            self.assertEqual(version, ('strategy-' if role == 'seeker' else 'policy-') + prepared['request_key'][4:])
+            self.assertEqual(parse_json(wire['messages'][1]['content'])['proposed_version_id'], version)
+            self.assertNotIn('const', channel.transport.schemas[role]['properties'][field]['properties']['version_id'])
+            versions.append(version)
+        self.assertEqual(len(set(versions)), 3)
+
+    def test_colliding_model_version_is_rejected_after_settlement_without_resend(self):
+        self.store.submit(plan('prepare'), baseline(), 'synthetic-owner', 'parent')
+        strategy = {**search_baseline(), 'version_id': 'baseline-v1', 'parent_id': 'search-baseline-v1'}
+        value = completion()
+        value['choices'][0]['message']['content'] = canonical(
+            {'plan': plan('prepare'), 'statement': 'Synthetic statement.', 'strategy': strategy}).decode()
+        channel, http = self.channel((200, canonical(value)))
+        outcome = self.call(channel)
+        self.assertEqual((outcome.kind, outcome.reason, outcome.state), ('rejected', 'proposal_version_mismatch', 'settled'))
+        self.assertIsNone(outcome.payload)
+        self.assertEqual(self.call(channel).kind, 'duplicate')
+        self.assertEqual(len(http.sent), 1)
+        self.assertEqual(self.accounts.totals(), {'settled_micros': 13, 'reserved_micros': 0})
 
     def test_wire_contract_pins_provider_and_measures_entire_payload(self):
         measured = []
@@ -272,7 +303,8 @@ class OpenRouterTests(unittest.TestCase):
 
     def test_keeper_response_is_bound_to_existing_parent(self):
         self.store.submit(plan('prepare'), baseline(), 'synthetic-owner', 'parent')
-        child = {**baseline(), 'version_id': 'synthetic-child', 'parent_id': 'baseline-v1'}
+        child = {**baseline(), 'version_id': 'policy-' + digest(canonical({'role': 'keeper', 'task_key': 'keeper-task'})),
+                 'parent_id': 'baseline-v1'}
         body = completion(choices=[{'finish_reason': 'stop', 'message': {'content': canonical({'policy': child, 'statement': 'Synthetic repair.'}).decode()}}])
         channel, _ = self.channel((200, canonical(body)))
         outcome = channel.request('keeper', 'keeper-task', self.segments, expected_parent='baseline-v1')

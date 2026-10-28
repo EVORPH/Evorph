@@ -11,14 +11,22 @@ https://evorph.net. Detailed evidence lives in VERIFICATION.md.
   native Windows Python is not supported.
 - Added four bounded API workers with separate SQLite connections, a bounded
   queue and explicit overload responses; added credential-free access events.
-  These backend changes require deployment before affecting the live service.
-- Added a Caddy configuration sample with header/body deadlines and size limits;
-  the sample is not automatically installed on a running host.
+  Deployed after verified state and code backups; the public API returned 200
+  and emitted normalized access events.
+- Added and deployed Caddy header/body deadlines and size limits; static hosting
+  remains independent of API request processing.
 - Clarified automatic publication versus verified results, the first round's
   missing evidence links, and the absence of an independent archive witness.
 - Opened the repository's issue tracker; vulnerability reports remain private.
 - Published the supplied contract address in all three site footers with a copy
   action, and synchronized that already-deployed static change into this tree.
+  Clarified that displaying an address is distinct from website issuance or
+  wallet transactions.
+- Fixed a live research stop caused by a proposed search method reusing an
+  existing policy version name. New provider requests pin distinct strategy
+  and policy identifiers to the role and round, with a local response check.
+  The failed round and its settled usage remain unchanged; subsequent research
+  resumes on the existing operator-selected rhythm.
 
 ## 2026-10-26
 

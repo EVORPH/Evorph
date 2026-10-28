@@ -183,6 +183,12 @@ test('schema declarations and changed import chain use the new public release wi
   for (const text of [view, fixture]) assert.match(text, /research-contract\.js\?v=public-research-v2-1/);
   assert.match(view, /renderResearchStatus/); assert.match(index, /research\.css\?v=experiment-status-1/);
 });
+test('issuance documentation distinguishes the token address from website transactions', async () => {
+  const docs = await readFile(new URL('../dist/docs.html', import.meta.url), 'utf8');
+  assert.ok(docs.includes('The footer displays the EVORPH token contract address.'));
+  assert.ok(docs.includes('This website does not connect wallets, issue tokens, or execute on-chain contributions.'));
+  assert.doesNotMatch(docs, /No wallet connection, token issuance/);
+});
 test('all public footers show the supplied contract address in a copy button', async () => {
   const address = '0xbe2ebdf265d02ba3ee07743b821a52c030ab0aab';
   for (const page of ['index.html', 'docs.html', 'brand.html']) {

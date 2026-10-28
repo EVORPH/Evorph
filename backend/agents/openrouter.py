@@ -153,10 +153,14 @@ class OpenRouterTransport:
             raise InputError('Provider route differs from the fixed channel.')
         role = envelope['role']
         rules = next(item['text'] for item in envelope['segments'] if item['name'] == 'task_rules')
+        proposed_version = ('strategy-' if role == 'seeker' else 'policy-') + digest(
+            canonical({'role': role, 'task_key': envelope['task_key']}))
         context = {'spec_digest': envelope['spec_digest'], 'expected_parent': envelope['expected_parent'],
-                   'parent_digest': envelope['parent_digest'],
+                   'parent_digest': envelope['parent_digest'], 'proposed_version_id': proposed_version,
                    'data': [item for item in envelope['segments'] if item['name'] != 'task_rules']}
-        schema = self.schemas[role]
+        schema = deepcopy(self.schemas[role])
+        proposal_schema = schema['properties']['strategy' if role == 'seeker' else 'policy']
+        proposal_schema['properties']['version_id'] = {'const': proposed_version}
         strategy_parent = envelope.get('strategy_parent')
         if strategy_parent is not None:
             # The inherited search method's identity is fixed input, not a model choice:
@@ -164,7 +168,6 @@ class OpenRouterTransport:
             if role != 'seeker':
                 raise InputError('Only the seeker request pins a strategy parent.')
             identifier(strategy_parent)
-            schema = deepcopy(schema)
             schema['properties']['strategy']['properties']['parent_id'] = {'const': strategy_parent}
         request = {'model': self.spec.model_id, 'stream': False, 'max_tokens': envelope['max_output_tokens'],
                    'provider': {'only': [self.spec.provider], 'order': [self.spec.provider],
@@ -290,8 +293,15 @@ class OpenRouterChannel(ModelChannel):
         normalized = {'schema_version': RESPONSE_SCHEMA, 'provider': self.spec.provider, 'model_id': self.spec.model_id,
                       'stop_reason': 'max_output_tokens' if stop == 'length' else 'complete',
                       'refusal': refusal, 'payload': payload, 'usage': reported}
-        return super().classify(call_id, canonical(normalized), role, expected_parent, measured, bound,
-                                {**request_data, 'provider_cost_micros': cost})
+        outcome = super().classify(call_id, canonical(normalized), role, expected_parent, measured, bound,
+                                   {**request_data, 'provider_cost_micros': cost})
+        if outcome.kind == 'accepted':
+            proposal = outcome.payload.get('strategy') if role == 'seeker' else outcome.payload['body']
+            expected = ('strategy-' if role == 'seeker' else 'policy-') + self.accounting.get(call_id)['request_key'][4:]
+            if proposal is not None and proposal['version_id'] != expected:
+                return self.outcome('rejected', call_id, 'proposal_version_mismatch', 'settled', measured,
+                                    bound, outcome.billed_micros, outcome.usage)
+        return outcome
 
     def reconcile(self, call_id):
         row = self.accounting.get(call_id)
