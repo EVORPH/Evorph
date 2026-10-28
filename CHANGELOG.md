@@ -33,6 +33,10 @@ https://evorph.net. Detailed evidence lives in VERIFICATION.md.
   with full cursor traversal, validates every page against the site's public
   contract, and issues no write request. Linked from the main navigation and
   from all three footers. No backend change.
+- Replaced a workspace test that read a directory excluded from this repository
+  with pinned digests of the reviewed classification rules; the first push
+  failed continuous integration for that reason alone and no deployed file was
+  involved.
 
 ## 2026-10-26
 

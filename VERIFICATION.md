@@ -91,6 +91,8 @@ For the already-deployed contract-address change, two targeted frontend tests pa
 
 Frontend checks: **42 tests passed** (35 pre-existing plus 7 covering cursor traversal, refusal of a repeated cursor, a wrong archive mode, a duplicated listing, transport and HTTP failures, page wiring, and reuse of the classification rules without forking them) and **18 module syntax checks passed**.
 
+The first push of this workspace failed in continuous integration while passing locally: one new test compared the shipped classification rules against a delivery directory that is excluded from this repository, so the file was absent in a clean checkout. The comparison was replaced with pinned digests of the reviewed rules, which is self-contained; the frontend suite then passed both in a clean local checkout of the published tree and in continuous integration. No deployed file was involved in that failure.
+
 The workspace reads the live public archive. At verification it reported 25 experiments and 206 public records, matching an independent paginated read of the same endpoints performed outside the page. Browser checks covered playback advance, manual pause, automatic stop at the last record, speed selection, cross-experiment version lineage with browser return, deep links to a chosen experiment and record, outcome filters with search and reset, first-round records whose evidence link is empty showing `Download not published`, a UTC read receipt, and no console errors or warnings. Layout showed no horizontal overflow at 320, 390, 768 and 1440 px.
 
 Deployed after a full backup of the served frontend tree; the API process, scheduler, research rhythm and spending policy were not touched.
