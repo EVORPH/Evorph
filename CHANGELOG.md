@@ -27,6 +27,12 @@ https://evorph.net. Detailed evidence lives in VERIFICATION.md.
   and policy identifiers to the role and round, with a local response check.
   The failed round and its settled usage remain unchanged; subsequent research
   resumes on the existing operator-selected rhythm.
+- Added an observation-room workspace at `/lab/`: ordered playback of one
+  published experiment's public records, separate successful and unsuccessful
+  archives, and a source-and-method page. It reads the same public endpoints
+  with full cursor traversal, validates every page against the site's public
+  contract, and issues no write request. Linked from the main navigation and
+  from all three footers. No backend change.
 
 ## 2026-10-26
 

@@ -87,6 +87,16 @@ A separate live research interruption was traced to a proposed strategy name col
 
 For the already-deployed contract-address change, two targeted frontend tests passed; all three pages were checked at 320 px and 1280 px, clipboard success/denial handling was exercised using substituted browser clipboard methods, and all nine changed public assets matched their local hashes when fetched from the deployed site.
 
+## 2026-10-28 observation-room workspace
+
+Frontend checks: **42 tests passed** (35 pre-existing plus 7 covering cursor traversal, refusal of a repeated cursor, a wrong archive mode, a duplicated listing, transport and HTTP failures, page wiring, and reuse of the classification rules without forking them) and **18 module syntax checks passed**.
+
+The workspace reads the live public archive. At verification it reported 25 experiments and 206 public records, matching an independent paginated read of the same endpoints performed outside the page. Browser checks covered playback advance, manual pause, automatic stop at the last record, speed selection, cross-experiment version lineage with browser return, deep links to a chosen experiment and record, outcome filters with search and reset, first-round records whose evidence link is empty showing `Download not published`, a UTC read receipt, and no console errors or warnings. Layout showed no horizontal overflow at 320, 390, 768 and 1440 px.
+
+Deployed after a full backup of the served frontend tree; the API process, scheduler, research rhythm and spending policy were not touched.
+
+Limits: records are published after a round finishes, so this workspace replays finished public records and does not stream a round in progress. It reads the whole archive on load, which is acceptable at this archive size and is a known scaling limit rather than a measured capacity. Its classification navigates service-reported evidence and does not independently certify that evidence.
+
 ## What a passing run does and does not mean
 
 A passing signature run shows that a candidate verifies against the published vectors inside this harness, with the algorithm, permission specification, and acceptance criteria fixed by the recorded evidence. It does not certify a product, a chain, or a library as quantum-resistant, and a failure produced by this project's own code is not a vulnerability in anything external.

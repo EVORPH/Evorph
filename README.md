@@ -63,6 +63,8 @@ python3 -m http.server 4174 --bind 127.0.0.1 --directory dist
 
 Open http://127.0.0.1:4174/ — a machine serving only these files has no archive behind it, so the page reports the research service as not connected; that is the truthful state for a local static server, while the deployed instance serves the live public archive. Add `?research=preview#research` to load the labeled example records; they are illustrations of record shapes and lengths, not model output and not accepted results.
 
+The observation room lives at `/lab/` (locally, http://127.0.0.1:4174/lab/). It replays one published experiment's public records in order, keeps successful and unsuccessful outcomes on separate pages, and states where its data came from. It reads the same public endpoints as the rest of the site, follows every pagination cursor, and validates each page against `frontend/dist/research-contract.js`; a static server with no API behind it therefore reports a failed read rather than inventing records.
+
 ## Run the service
 
 `deploy/RUNBOOK.md` covers first run, start and stop, schedule policy, backup and restore, and the known failure modes. The API binds a loopback address only; a reverse proxy in front of it terminates TLS and serves the static files.

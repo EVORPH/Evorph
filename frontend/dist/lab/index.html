@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f3f2eb"><meta name="description" content="Watch how EVORPH's two research roles work: replay the public record of an experiment, follow every check, comparison and version decision, and see which retained results are supported by evidence.">
+<title>EVORPH — Observation room</title><link rel="icon" href="/assets/brand/crystal-favicon-v1-32.png" type="image/png" sizes="32x32"><link rel="preload" href="/assets/fonts/sora-variable.ttf" as="font" type="font/ttf" crossorigin><link rel="stylesheet" href="./style.css?v=lab-1"><script type="module" src="./app.mjs?v=lab-1"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to workspace</a>
+<svg class="symbols" aria-hidden="true"><defs>
+<symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol><symbol id="i-external" viewBox="0 0 24 24"><path d="M7 17 17 7M7 7h10v10"/></symbol><symbol id="i-lab" viewBox="0 0 24 24"><path d="M8 3h8m-7 0v7L4 19q-1 2 2 2h12q3 0 2-2l-5-9V3M7 15h10"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol><symbol id="i-cross" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol><symbol id="i-archive" viewBox="0 0 24 24"><path d="M4 8h16v13H4zM3 3h18v5H3zM9 12h6"/></symbol><symbol id="i-play" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7Z"/></symbol><symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol><symbol id="i-prev" viewBox="0 0 24 24"><path d="m15 5-7 7 7 7"/></symbol><symbol id="i-next" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol><symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M5 17v4h14v-4"/></symbol><symbol id="i-search" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="m15 15 6 6"/></symbol><symbol id="i-source" viewBox="0 0 24 24"><path d="M8 3H4v18h16V3h-4M8 3h8v4H8zM8 12h8M8 16h5"/></symbol>
+</defs></svg>
+<div class="shell">
+<aside class="sidebar">
+<a class="brand" href="../" aria-label="EVORPH home"><img src="/assets/brand/crystal-logo-192.png" alt="" width="35" height="35"><span>EVORPH<span class="brand-dot">.</span></span></a>
+<div class="sidebar-caption">The research observatory</div>
+<nav class="navigation" aria-label="Workspace">
+<a data-route href="?view=lab" data-page="lab"><svg><use href="#i-lab"/></svg><span>Observation room</span><span class="nav-indicator"></span></a>
+<a data-route href="?view=success" data-page="success"><svg><use href="#i-check"/></svg><span>Successful</span><span id="success-count" class="nav-count">—</span></a>
+<a data-route href="?view=failures" data-page="failures"><svg><use href="#i-archive"/></svg><span>Unsuccessful</span><span id="failure-count" class="nav-count">—</span></a>
+<a data-route href="?view=provenance" data-page="provenance"><svg><use href="#i-source"/></svg><span>Sources &amp; method</span></a>
+</nav>
+<div class="chapter-block"><span class="tiny">CURRENT CHAPTER</span><strong>The Retired Key</strong><p>When a key retires,<br>does its authority end?</p><div class="chapter-line"><span></span><span></span><span></span><span></span></div><small>Fixed spec · retired-key.v1</small></div>
+<div class="sidebar-bottom"><div><span id="total-experiments">—</span><small>experiments archived</small></div><div><span id="total-records">—</span><small>public records read</small></div><div class="sidebar-links"><a href="../">EVORPH home <svg><use href="#i-arrow"/></svg></a><a href="../docs.html">Documentation <svg><use href="#i-arrow"/></svg></a></div></div>
+</aside>
+<div class="main-shell">
+<header class="topbar"><span id="breadcrumb">Workspace <span>/</span> Observation room</span><div class="snapshot-badge" id="source-badge" title="A connected archive service does not mean a research round is running now."><span class="square-dot"></span><span id="source-state">Reading the public archive</span></div></header>
+<main id="main" tabindex="-1"><div id="loading-state" class="loading-state"><div class="loading-line"></div><h1>Opening the archive…</h1><p>Reading the public research records served by evorph.net.</p></div><div id="app" hidden></div></main>
+<footer class="page-footer"><span>Public notes. Fixed checks. Traceable decisions.</span><a data-route href="?view=provenance" id="footer-source">How this page reads the archive <svg><use href="#i-arrow"/></svg></a></footer>
+</div></div>
+<div id="announcement" class="sr-only" aria-live="polite"></div>
+</body></html>
