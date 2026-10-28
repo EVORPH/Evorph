@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { createPreviewAdapter, previewRecords } from '../dist/examples/research-preview.js';
 import { createArchiveReader, ArchiveReadError } from '../dist/lab/data.mjs';
@@ -137,10 +138,12 @@ test('all three existing pages link to the workspace without losing their own na
 test('the workspace reuses the reviewed classification and UTC rules without forking them', async () => {
   const model = await read('lab/model.mjs');
   const time = await read('lab/time.mjs');
-  const originalModel = await readFile(new URL('../previews/dual-lab-2026-10-28/data-model.mjs', import.meta.url), 'utf8');
-  const originalTime = await readFile(new URL('../previews/dual-lab-2026-10-28/time-format.mjs', import.meta.url), 'utf8');
-  assert.equal(model, originalModel);
-  assert.equal(time, originalTime);
+  const reviewed = {
+    'lab/model.mjs': '257be260fb7fca6ef9328a9267f0ed1fbf93b1de51f1ee475d9136e34e359c66',
+    'lab/time.mjs': '879124832a4619c1e0ba863b297da57e11b8464a17e47b290a7077c6dc56ad5f',
+  };
+  assert.equal(createHash('sha256').update(model).digest('hex'), reviewed['lab/model.mjs']);
+  assert.equal(createHash('sha256').update(time).digest('hex'), reviewed['lab/time.mjs']);
   assert.match(model, /category: 'success'/);
   assert.match(model, /completed alone is insufficient|experiment\.state !== 'completed'/);
   assert.match(time, /UTC/);
