@@ -189,3 +189,9 @@
 .footer-top nav .social-link[aria-disabled="true"]{color:var(--muted);cursor:default}
 .footer-top nav .social-link:not([aria-disabled="true"]):hover{color:var(--lime)}
 .footer-top nav .social-link:focus-visible{outline:1px solid var(--lime);outline-offset:5px}
+.desktop-nav-centered{position:absolute;left:50%;top:0;height:100%;transform:translateX(-50%);margin:0}
+.nav-highlight{color:var(--lime);font-size:15px}
+.header-actions .nav-docs{font-size:12px;min-height:44px;display:flex;align-items:center;gap:7px;position:relative}
+.header-actions .nav-docs svg{width:14px;height:14px}
+.header-actions .nav-docs:after{content:"";height:1px;background:var(--lime);position:absolute;bottom:7px;left:0;right:100%;transition:right .24s var(--ease)}
+.header-actions .nav-docs:hover:after{right:0}

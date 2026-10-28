@@ -194,7 +194,7 @@ test('all public footers show the supplied contract address in a copy button', a
   for (const page of ['index.html', 'docs.html', 'brand.html']) {
     const html = await readFile(new URL(`../dist/${page}`, import.meta.url), 'utf8');
     assert.ok(html.includes(`aria-label="Copy contract address" title="Copy contract address">${address}</button>`));
-    assert.ok(html.includes('style.css?v=m14-1'));
+    assert.ok(html.includes('style.css?v=m14-2'));
     assert.doesNotMatch(html, /Contract address reserved/);
   }
 });
