@@ -3,7 +3,7 @@ EVORPH — Asset credits
 Original website layout, SVG geometry and procedural three.js sculptures created for this project.
 One context photograph shows the Advanced Quantum Testbed dilution refrigerator at Berkeley Lab.
 Source: National Quantum Initiative image gallery, https://www.quantum.gov/quantum-image-gallery/.
-The homepage includes attribution. The photograph does not depict equipment owned or operated by EVORPH.
+The documentation's Evidence & sources page includes attribution and the source link. The photograph does not depict equipment owned or operated by EVORPH.
 
 Vendored three.js modules report revision 186.
 License: assets/vendor/THREE-LICENSE.txt (MIT).

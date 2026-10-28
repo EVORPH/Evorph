@@ -28,7 +28,7 @@ Self-hosted in `frontend/dist/assets/fonts/`, both under the SIL Open Font Licen
 
 ## Photograph
 
-`frontend/dist/assets/research/quantum-hardware.jpg` — cryogenic wiring in the Advanced Quantum Testbed dilution refrigerator at Berkeley Lab, from the U.S. Quantum image gallery at https://www.quantum.gov/quantum-image-gallery/. It is used as context on the homepage with a visible credit and a link to the source. It is not this project's hardware, and no result produced here was measured on it.
+`frontend/dist/assets/research/quantum-hardware.jpg` — cryogenic wiring in the Advanced Quantum Testbed dilution refrigerator at Berkeley Lab, from the U.S. Quantum image gallery at https://www.quantum.gov/quantum-image-gallery/. It is used as context on the homepage; the visible credit and source link live in the documentation's Evidence & sources page, and the homepage position now shows the token contract address. It is not this project's hardware, and no result produced here was measured on it.
 
 ## Visual references
 

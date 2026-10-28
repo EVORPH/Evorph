@@ -195,3 +195,4 @@
 .header-actions .nav-docs svg{width:14px;height:14px}
 .header-actions .nav-docs:after{content:"";height:1px;background:var(--lime);position:absolute;bottom:7px;left:0;right:100%;transition:right .24s var(--ease)}
 .header-actions .nav-docs:hover:after{right:0}
+.hero-photograph figcaption .hero-ca{display:block;color:#c9d0c0;font:12px/1.6 var(--mono);letter-spacing:.01em}
