@@ -1,4 +1,4 @@
-import { announce } from './common.js?v=public-records-5';
+import { announce } from './common.js?v=m14-1';
 const articles=Array.from(document.querySelectorAll('[data-doc]'));
 const links=Array.from(document.querySelectorAll('[data-doc-link]'));
 const sidebar=document.querySelector('.docs-sidebar');

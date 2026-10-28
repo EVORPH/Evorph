@@ -31,7 +31,13 @@ What runs in production today: the deterministic judging core, the private execu
 
 ## Run the tests
 
-Python 3.9 or newer, no third-party packages:
+Use Linux or macOS with Python 3.9 or newer, Git, and OpenSSL 3.5 or newer with ML-DSA support. There are no third-party Python packages. The backend uses POSIX file locks, process groups, and resource accounting; native Windows Python is not supported.
+
+On Windows, run the commands inside WSL2 with a Linux distribution, and clone into its Linux filesystem rather than an existing Windows checkout. WSL2 must have its own Python and a suitable OpenSSL; `openssl list -signature-algorithms` must include `ML-DSA-44`. Point `EVORPH_OPENSSL` at a compatible binary when it is not on `PATH`. This is the recommended route for Windows users; a separate WSL2 test run has not been recorded, and native Windows compatibility is not claimed.
+
+The tracked `.gitattributes` preserves upstream vector bytes and uses LF for source files even when Git's automatic line-ending conversion is enabled.
+
+From the repository root:
 
 ```
 cd backend/tests
@@ -65,9 +71,13 @@ Open http://127.0.0.1:4174/ — a machine serving only these files has no archiv
 
 The public projection is defined by `frontend/research-contract.d.ts` and enforced by `frontend/dist/research-contract.js`. Records reach the page only through an allowlisted transformation of private state; raw rows, raw model responses, and internal exceptions are never returned. Public statements are intentional role output, not extracted reasoning traces.
 
+Publication is automatic after mechanical release checks, not human approval or proof that a statement is correct. Role statements are limited to 2,000 characters at the channel boundary and marked `unverified`; only fixed-program records carry supported observations. The private-marker filter is a limited safeguard, not comprehensive detection of every possible disclosure.
+
+Hashes detect changed evidence when compared with a previously obtained digest. The archive has no independent timestamp or external append-only witness yet; an operator who rewrites both content and its digest is outside that protection.
+
 ## Replay a published verdict
 
-Every published verification record links its evidence pack at `/api/research/experiments/<experiment>/evidence/<evidence>`. The pack carries the candidate rules, the tested challenge, and the fixed program's trace with its digests, and nothing else: no ledger rows, no credentials, no model text.
+New verification records link their evidence packs at `/api/research/experiments/<experiment>/evidence/<evidence>`. Records from the first live round predate that link field and retain a null link; they are not rewritten. A pack carries the candidate rules, the tested challenge, and the fixed program's trace with its digests, and nothing else: no ledger rows, no credentials, no model text.
 
 ```
 python3 -m ops replay-evidence --pack pack.json --config ops.json

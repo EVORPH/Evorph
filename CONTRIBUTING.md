@@ -16,6 +16,10 @@ no payment are involved.
 
 ## Code contributions
 
+Use Linux or macOS; on Windows, work inside WSL2 as described in README.md. Native Windows Python cannot run the POSIX backend. Keep the tracked `.gitattributes` rules so official vector bytes remain identical after checkout.
+
+For a reproducible bug or a documentation correction, open an issue with the expected and actual behavior, operating system, Python/OpenSSL versions, and minimal steps. Keep credentials and private state out of reports. Suspected vulnerabilities use the private channel in SECURITY.md instead.
+
 1. Branch from `main`.
 2. Backend: `cd backend/tests && PYTHONPATH=..:. python3 -m unittest discover -p 'test_*.py' -v`.
    This requires OpenSSL 3.5 or newer with ML-DSA support on `PATH`, or named

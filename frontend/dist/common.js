@@ -30,6 +30,16 @@ export function announce(message) {
   toast.hidden = false;
   toastTimer = setTimeout(() => { toast.hidden = true; }, 3500);
 }
+for (const button of document.querySelectorAll('.footer-ca-address')) {
+  button.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(button.textContent.trim());
+      announce('Contract address copied.');
+    } catch {
+      announce('Copy unavailable. Select the address to copy it.');
+    }
+  });
+}
 document.getElementById('motion-toggle')?.addEventListener('click', () => { manuallyPaused = !manuallyPaused; updateMotion(); });
 preference.addEventListener('change', updateMotion);
 const menuButton = document.getElementById('menu-toggle');

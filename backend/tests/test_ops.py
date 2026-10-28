@@ -3,6 +3,9 @@ from pathlib import Path
 import contextlib
 import io
 import json
+import hashlib
+import shutil
+import subprocess
 import socket
 import tempfile
 import threading
@@ -18,7 +21,7 @@ from agents.strategy import baseline as method
 from evorph.candidates import baseline
 from evorph.contracts import InputError, canonical
 from evorph.evaluation import plan
-from ops.__main__ import SCHEDULE_MISSING, main, run_scheduler, serve_api
+from ops.__main__ import APIHTTPServer, SCHEDULE_MISSING, main, run_scheduler, serve_api
 from ops.compose import build, publisher
 from ops.config import load
 from runtime.accounting import Accounting
@@ -371,6 +374,85 @@ class OpsTests(unittest.TestCase):
             stop.set()
             server.join(timeout=10)
         self.assertEqual(statuses, [200, 200, 429, 200, 200])
+
+    def test_vector_bytes_survive_autocrlf_checkout(self):
+        root = Path(__file__).resolve().parents[2]
+        repository = self.root / 'checkout-source'
+        repository.mkdir()
+        shutil.copyfile(root / '.gitattributes', repository / '.gitattributes')
+        vectors = repository / 'backend' / 'vectors'
+        vectors.mkdir(parents=True)
+        manifest = json.loads((root / 'backend/vectors/manifest.json').read_text())
+        for entry in manifest['files']:
+            shutil.copyfile(root / 'backend/vectors' / entry['local_path'], vectors / entry['local_path'])
+        subprocess.run(['git', 'init', '--quiet', str(repository)], check=True, capture_output=True, timeout=10)
+        command = ['git', '-C', str(repository), '-c', 'core.autocrlf=true']
+        subprocess.run(command + ['add', '--', '.gitattributes', 'backend/vectors'], check=True, capture_output=True, timeout=10)
+        destination = self.root / 'checkout-result'
+        subprocess.run(command + ['checkout-index', '--all', '--prefix=' + str(destination) + '/'],
+                       check=True, capture_output=True, timeout=10)
+        for entry in manifest['files']:
+            raw = (destination / 'backend/vectors' / entry['local_path']).read_bytes()
+            self.assertEqual(hashlib.sha256(raw).hexdigest(), entry['sha256'])
+            self.assertEqual(len(raw), entry['size'])
+
+    def test_slow_connections_leave_a_worker_available_and_logs_are_redacted(self):
+        config = load(self.candidate(lambda raw: raw['service'].update(request_timeout=3)))
+        stalled = []
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            server = APIHTTPServer(config)
+            thread = threading.Thread(target=server.serve_forever, kwargs={'poll_interval': 0.02}, daemon=True)
+            thread.start()
+            try:
+                self.assertEqual(len(server.threads), 4)
+                self.assertEqual(server.requests.maxsize, 4)
+                for _ in range(3):
+                    connection = socket.create_connection(server.server_address, timeout=2)
+                    connection.sendall(b'POST /api/identities HTTP/1.1\r\nHost: localhost\r\n')
+                    stalled.append(connection)
+                fast = HTTPConnection(*server.server_address, timeout=1.5)
+                try:
+                    fast.request('GET', '/api/research/status')
+                    response = fast.getresponse()
+                    self.assertEqual(response.status, 200)
+                    self.assertTrue(json.loads(response.read())['connected'])
+                    fast.request('GET', '/api/research/status?secret=synthetic-query-value',
+                                 headers={'Authorization': 'Bearer synthetic-header-value',
+                                          'Cookie': 'synthetic-cookie-value'})
+                    response = fast.getresponse()
+                    response.read()
+                    self.assertEqual(response.status, 400)
+                finally:
+                    fast.close()
+            finally:
+                for connection in stalled:
+                    connection.close()
+                server.shutdown()
+                thread.join(timeout=5)
+                server.server_close()
+        self.assertFalse(thread.is_alive())
+        events = [json.loads(line) for line in output.getvalue().splitlines()]
+        self.assertTrue(any(event.get('status') == 200 for event in events))
+        self.assertTrue(any(event.get('status') == 400 for event in events))
+        self.assertFalse(any(event.get('event') == 'http_worker_error' for event in events))
+        for value in ('synthetic-query-value', 'synthetic-header-value', 'synthetic-cookie-value'):
+            self.assertNotIn(value, output.getvalue())
+        self.assertTrue(all(set(event) == {'event', 'method', 'route', 'status', 'outcome', 'duration_ms'} for event in events))
+
+    def test_full_http_queue_rejects_without_creating_another_worker(self):
+        from queue import Queue
+        from unittest.mock import Mock
+        server = APIHTTPServer.__new__(APIHTTPServer)
+        server.requests = Queue(maxsize=1)
+        server.requests.put(None)
+        connection = Mock()
+        with contextlib.redirect_stdout(io.StringIO()) as output:
+            server.process_request(connection, ('127.0.0.1', 1))
+        self.assertIn(b'503 Service Unavailable', connection.sendall.call_args.args[0])
+        connection.close.assert_called_once()
+        self.assertEqual(server.requests.qsize(), 1)
+        self.assertEqual(json.loads(output.getvalue())['event'], 'http_overload')
 
     def test_replay_evidence_reproduces_a_recorded_verdict_offline_and_rejects_tampering(self):
         config = load(self.candidate(lambda raw: None))

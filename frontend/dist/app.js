@@ -1,9 +1,9 @@
-import { motion, onMotionChange, announce } from './common.js?v=public-records-5';
+import { motion, onMotionChange, announce } from './common.js?v=m14-1';
 import { createHeroField, createLabFlow, decryptText } from './effects.js?v=public-records-5';
-import { mountResearchView } from './research-view.js?v=m13-1';
+import { mountResearchView } from './research-view.js?v=m14-1';
 import { createServiceClient } from './service-client.js?v=m11-1';
 import { createResearchAdapter } from './research-adapter.js?v=m11-1';
-import { mountContribution } from './contribution.js?v=m13-1';
+import { mountContribution } from './contribution.js?v=m14-1';
 
 const $=id=>document.getElementById(id);
 const staticView=new URLSearchParams(location.search).get('render')==='static';

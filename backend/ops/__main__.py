@@ -1,6 +1,7 @@
 import argparse
 from http.server import HTTPServer
 from pathlib import Path
+from queue import Empty, Full, Queue
 import signal
 import sqlite3
 import sys
@@ -34,24 +35,91 @@ def _shutdown_when_stopped(server, stop):
     server.shutdown()
 
 
+class APIHTTPServer(HTTPServer):
+    workers = 4
+
+    def __init__(self, config):
+        self.requests = Queue(maxsize=self.workers)
+        self.threads = []
+        super().__init__((config.listen_host, config.listen_port), None)
+        ready = Queue()
+        try:
+            for _ in range(self.workers):
+                thread = threading.Thread(target=self._worker, args=(config, ready), daemon=True)
+                self.threads.append(thread)
+                thread.start()
+                error = ready.get()
+                if error is not None:
+                    raise error
+        except BaseException:
+            self.server_close()
+            raise
+
+    def _worker(self, config, ready):
+        runtime = None
+        try:
+            runtime = build(config)
+            api = handler(runtime.service, origin=config.origin, request_timeout=config.request_timeout)
+        except Exception as exc:
+            if runtime is not None:
+                runtime.close()
+            ready.put(exc)
+            return
+        ready.put(None)
+        try:
+            while True:
+                item = self.requests.get()
+                if item is None:
+                    return
+                request, address = item
+                try:
+                    api(request, address, self)
+                except Exception as exc:
+                    print(canonical({'event': 'http_worker_error', 'kind': type(exc).__name__}).decode(), flush=True)
+                finally:
+                    self.shutdown_request(request)
+        finally:
+            runtime.close()
+
+    def process_request(self, request, client_address):
+        try:
+            self.requests.put_nowait((request, client_address))
+        except Full:
+            try:
+                request.settimeout(0.1)
+                request.sendall(b'HTTP/1.0 503 Service Unavailable\r\nContent-Length: 0\r\nConnection: close\r\nCache-Control: no-store\r\n\r\n')
+            except OSError:
+                pass
+            finally:
+                self.shutdown_request(request)
+            print(canonical({'event': 'http_overload', 'status': 503}).decode(), flush=True)
+
+    def server_close(self):
+        super().server_close()
+        while True:
+            try:
+                item = self.requests.get_nowait()
+            except Empty:
+                break
+            if item is not None:
+                self.shutdown_request(item[0])
+        for _ in self.threads:
+            self.requests.put(None)
+        for thread in self.threads:
+            thread.join()
+        self.threads.clear()
+
+
 def serve_api(config, stop=None):
-    runtime = build(config)
-    try:
-        api = handler(runtime.service, origin=config.origin, request_timeout=config.request_timeout)
-        # One SQLite connection belongs to the thread that opened it, so requests stay serialized.
-        server = HTTPServer((config.listen_host, config.listen_port), api)
-    except BaseException:
-        runtime.close()
-        raise
+    server = APIHTTPServer(config)
     stop = install_stop_handlers() if stop is None else stop
     threading.Thread(target=_shutdown_when_stopped, args=(server, stop), daemon=True).start()
     print(canonical({'state': 'listening', 'host': server.server_address[0], 'port': server.server_address[1],
-                     'mode': runtime.service.mode}).decode(), flush=True)
+                     'mode': config.mode, 'workers': server.workers}).decode(), flush=True)
     try:
         server.serve_forever(poll_interval=POLL_SECONDS)
     finally:
         server.server_close()
-        runtime.close()
     return 0
 
 

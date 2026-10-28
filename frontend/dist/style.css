@@ -175,8 +175,9 @@
 /* Reserved address, intentionally empty until an approved contract exists. */
 .footer-ca{display:flex;align-items:center;justify-content:center;gap:12px;width:min(100%,430px);margin:34px auto 0;padding:18px 0 28px;font-family:Sora,sans-serif;font-size:13px;font-weight:400;line-height:1.5;color:var(--muted)}
 .footer-ca-label{flex:none;letter-spacing:0}
-.footer-ca-address{display:block;flex:0 1 290px;height:1.45em;border-bottom:1px solid var(--line)}
-@media(max-width:640px){.footer-ca{margin-top:26px;width:min(100%,320px);font-size:12px}.footer-ca-address{flex-basis:240px}}
+.footer-ca-address{display:block;flex:0 1 340px;min-width:0;min-height:44px;padding:10px 0;font:12px/1.6 var(--mono);color:var(--fg);overflow-wrap:anywhere;user-select:text;border-bottom:1px solid var(--line)}
+.footer-ca-address:hover{color:var(--lime)}
+@media(max-width:640px){.footer-ca{margin-top:26px;width:min(100%,320px);font-size:12px}.footer-ca-address{flex-basis:280px;font-size:10px}}
 
 /* Crystal identity download controls retain room on small screens. */
 .brand-downloads{flex-wrap:wrap}

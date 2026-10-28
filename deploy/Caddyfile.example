@@ -1,0 +1,32 @@
+{
+	servers {
+		max_header_size 32KB
+		timeouts {
+			read_header 5s
+			read_body 10s
+			write 40s
+			idle 2m
+		}
+	}
+}
+
+research.invalid {
+	encode gzip
+	root * /opt/evorph/frontend/dist
+
+	handle /api/* {
+		request_body {
+			max_size 64KB
+		}
+		reverse_proxy 127.0.0.1:8080 {
+			transport http {
+				dial_timeout 3s
+				response_header_timeout 35s
+			}
+		}
+	}
+
+	handle {
+		file_server
+	}
+}

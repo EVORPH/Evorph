@@ -178,10 +178,19 @@ test('schema declarations and changed import chain use the new public release wi
   const files = ['research-contract.d.ts', 'RESEARCH-DATA-CONTRACT.md', 'dist/index.html', 'dist/app.js', 'dist/research-view.js', 'dist/examples/research-preview.js'];
   const [types, contract, index, app, view, fixture] = await Promise.all(files.map(path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')));
   for (const text of [types, contract]) { assert.ok(text.includes(SCHEMA_VERSION)); assert.doesNotMatch(text, /evorph\.public-research\.v1/); }
-  assert.match(index, /app\.js\?v=m13-1/); assert.match(app, /research-view\.js\?v=m13-1/);
+  assert.match(index, /app\.js\?v=m14-1/); assert.match(app, /research-view\.js\?v=m14-1/);
   assert.match(view, /research-preview\.js\?v=public-research-v2-1/);
   for (const text of [view, fixture]) assert.match(text, /research-contract\.js\?v=public-research-v2-1/);
   assert.match(view, /renderResearchStatus/); assert.match(index, /research\.css\?v=experiment-status-1/);
+});
+test('all public footers show the supplied contract address in a copy button', async () => {
+  const address = '0xbe2ebdf265d02ba3ee07743b821a52c030ab0aab';
+  for (const page of ['index.html', 'docs.html', 'brand.html']) {
+    const html = await readFile(new URL(`../dist/${page}`, import.meta.url), 'utf8');
+    assert.ok(html.includes(`aria-label="Copy contract address" title="Copy contract address">${address}</button>`));
+    assert.ok(html.includes('style.css?v=m14-1'));
+    assert.doesNotMatch(html, /Contract address reserved/);
+  }
 });
 test('verification evidence and tests must be included in the same public record', () => {
   const item = record('verification'); item.verification.evidence_ids.push('unlisted-evidence'); assert.throws(() => validateRecord(item));

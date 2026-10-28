@@ -1,4 +1,4 @@
-import { motion, announce } from './common.js?v=public-records-5';
+import { motion, announce } from './common.js?v=m14-1';
 import { createResearchAdapter } from './research-adapter.js?v=public-records-5';
 import { PHASES, validateExperimentPage, validateRecordPage, mergeRecords, safePublicHref } from './research-contract.js?v=public-research-v2-1';
 import { EXPERIMENT_STATE_LABELS, renderResearchStatus } from './research-status.js';

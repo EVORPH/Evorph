@@ -215,7 +215,10 @@ def handler(service, *, origin, request_timeout):
         protocol_version = 'HTTP/1.0'
 
         def setup(self):
+            from time import monotonic
             super().setup()
+            self.started = monotonic()
+            self.response_status = None
             self.connection.settimeout(request_timeout)
             self.expired = False
             self.deadline = Timer(request_timeout, self._expire)
@@ -230,8 +233,30 @@ def handler(service, *, origin, request_timeout):
                 pass
 
         def finish(self):
+            from time import monotonic
             self.deadline.cancel()
-            super().finish()
+            try:
+                super().finish()
+            finally:
+                path = getattr(self, 'path', '').split('?', 1)[0]
+                route = 'unknown'
+                if path in ('/api/research/status', '/api/identities', '/api/identities/recovery',
+                            '/api/identities/session', '/api/challenges/config', '/api/challenges'):
+                    route = path
+                elif READ_PATH.fullmatch(path):
+                    route = '/api/research/experiments' if path == '/api/research/experiments' else '/api/research/experiments/:id/records'
+                elif EVIDENCE_PATH.fullmatch(path):
+                    route = '/api/research/experiments/:id/evidence/:id'
+                elif CHALLENGE_PATH.fullmatch(path):
+                    route = '/api/challenges/:id'
+                command = getattr(self, 'command', None)
+                print(canonical({'event': 'http_access', 'method': command if command in ('GET', 'POST') else 'other',
+                                 'route': route, 'status': self.response_status,
+                                 'outcome': 'timeout' if self.expired else 'response' if self.response_status else 'closed',
+                                 'duration_ms': round((monotonic() - self.started) * 1000)}).decode(), flush=True)
+
+        def log_request(self, code='-', size='-'):
+            self.response_status = int(code) if str(code).isdigit() else None
 
         def _respond(self, response):
             if self.expired:

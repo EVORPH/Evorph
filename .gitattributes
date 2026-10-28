@@ -1,0 +1,9 @@
+* text=auto eol=lf
+backend/vectors/** -text
+*.png -text
+*.jpg -text
+*.jpeg -text
+*.ico -text
+*.ttf -text
+*.woff -text
+*.woff2 -text

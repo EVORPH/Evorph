@@ -10,6 +10,7 @@ Everything in this directory is inspectable on a local machine. Host names, chan
 | `ops.live-example.json` | Same shape for real provider channels: `mode: live`, a per-channel `provider_name`, a context-bound meter basis, and a credential path instead of a recorded script |
 | `runtime.example.json` | Private state configuration sample: capacity limits and spending caps; `spending: null` means the ledger is not armed |
 | `evorph-api.service` | Unit template for the public read and submission API |
+| `Caddyfile.example` | Loopback API proxy, request-size and connection deadlines, and independent static hosting |
 | `evorph-scheduler.service` | Unit template for the research scheduling worker |
 | `evorph-start.sh`, `evorph-stop.sh` | Start and stop |
 | `evorph-backup.sh`, `evorph-restore.sh` | Backup and restore |
@@ -65,6 +66,12 @@ python -m ops reconcile --config /etc/evorph/ops.json
 
 Every paid round shares one rhythm. A queued participant submission is served first when the deadline arrives, but it does not buy an extra round. Batch templates come from the research flow, so this directory does not create them. Interval values are set from measured runs and approved by the operator; the samples deliberately leave them out.
 
+## Request boundaries and access events
+
+`Caddyfile.example` keeps static files independent of the API. Replace its example host before use. It limits headers to 32 KB and bodies to 64 KB, with five seconds for headers and ten seconds for request bodies. The backend retains its own absolute connection deadline. Check the configuration with `caddy adapt --adapter caddyfile --config <file>` before an approved reload; adding the sample to a checkout does not change a running proxy.
+
+The API writes JSON access events to standard output: normalized route, method, response status, duration, and response/timeout/closed outcome. Query strings, raw paths, addresses, headers, and bodies are omitted. The systemd unit routes these events to the journal; inspect them with `journalctl -u evorph-api --since '10 minutes ago'`. Queue saturation emits `http_overload` with status 503. These records support diagnosis but do not themselves send alerts. Configure journal retention on the host rather than accumulating an unbounded application log.
+
 ## Backup and restore
 
 - `deploy/evorph-backup.sh` writes `/var/backups/evorph/<UTC timestamp>/` containing `manifest.json` and a sha256 for every file. It refuses to run when the destination already exists. It never deletes older copies; retention is an operator decision and no automatic cleanup is implemented.
@@ -76,7 +83,7 @@ Every paid round shares one rhythm. A queued participant submission is served fi
 1. **A failed archive read in the page is silent.** The frontend keeps the records it already loaded and does not render an error panel, so read health has to be judged from API logs and `ops status`, not from the page.
 2. **Two reviewed transports, and both roles must agree.** The research integration accepts either the recorded fixture transport or the reviewed provider transport, rejects anything else, and refuses to mix the two roles. An empty `channels.*.script` still makes every fixture send fail.
 3. **Fixtures plus an armed ledger wedge the schedule.** If spending is unpaused and the schedule is enabled while the channels are still fixtures, a send exception is recorded as `usage_unknown`. The scheduler then keeps returning `resource_paused` until that call is settled. `ops reconcile` settles one from the response already stored for it; a call with no stored evidence stays unresolved rather than being assumed free. Keep `spending` at `null` and the schedule disabled until the channels are the ones you intend to pay for.
-4. **The API process handles requests one at a time.** A single SQLite connection belongs to the thread that opened it, so requests are serialized. Concurrency has not been measured; changing it requires reviewing the connection and locking model first.
+4. **API concurrency is bounded.** Four fixed worker threads each own a separate runtime and SQLite connection; at most four accepted connections wait in the application queue. A full queue receives 503 rather than creating another thread. Each active connection retains its configured absolute deadline, including partial headers and bodies. This limits resource growth; it is not a claim of resistance to sustained overload. The scheduler remains a separate process.
 5. **A stop signal is not immediate.** The worker checks the stop event between ticks, so a running research round finishes first. `TimeoutStopSec=900` on the scheduler unit has to stay above the measured duration of one round, and `KillMode=control-group` reaps the crypto subprocesses with the parent.
 6. **Resource caps are placeholders.** `MemoryMax`, `MemoryHigh`, and `CPUQuota` apply to the whole cgroup, including the `openssl` subprocesses. Current values are 1G and 100% for the API and 2G and 200% for the scheduler; both are set from measurement, not from guesswork.
 7. **The archive mode is `example` or `live`, and it is immutable once written.** `live` names where the public records came from; it does not claim that research is running now, and a live archive may legitimately be empty. The mode has to match the configured channels, so a live archive cannot be fed by fixture channels. An existing state directory cannot be switched over — start a separate one for real runs and leave the example archive untouched.
