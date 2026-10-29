@@ -56,10 +56,10 @@
     {
       "tier": "live two-model round",
       "artifacts": [
-        "model service round record, kept outside this tree"
+        "private per-call capture and cost record, kept outside this tree"
       ],
-      "shows": "three paid rounds were run and priced; the proposals did not reach judgement because the reader rejected their container shape",
-      "does_not_show": "any research finding; no sequence was judged"
+      "shows": "after the repair, one round evaluated eight sequences over thirty-two comparisons and reached twenty-eight agreements; four disagreements were found and classified as a defect in our own written statement of the fixture, then fixed with a regression test that replays the captured sequence offline",
+      "does_not_show": "a protocol finding; the disagreements were between two statements we wrote, not between the draft and an implementation"
     }
   ],
   "measured": {
@@ -75,7 +75,15 @@
     "timeline_allowed": 4,
     "timeline_refused": 5,
     "live_rounds_paid": 3,
-    "live_rounds_total_usd": 0.081546
+    "live_rounds_evaluated_sequences": 0,
+    "live_round_explorer_calls": 4,
+    "live_round_repaired_call": {
+      "evaluated_sequences": 8,
+      "comparisons": 32,
+      "agreements": 28,
+      "divergences": 4,
+      "guardian_calls": 0
+    }
   },
   "rules_exercised": [
     "the named validator must exist",

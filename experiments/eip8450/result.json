@@ -159,28 +159,44 @@
       "meaning": "no difference between the model and a separately written oracle inside the enumerated space; outside it nothing is claimed"
     },
     "calibration": {
-      "labelled_faults": 5,
+      "faults": 4,
       "base_probe_set_blind_spots": [
         "cooldown_off_by_one",
         "leaf_index_ignored"
       ],
-      "after_adding_a_leaf_probe_and_a_boundary_probe": "all five faults are flagged and the clean model is not",
-      "honest_note": "a single-epoch sequence cannot reach the delay boundary, so the first probe set could never have caught an off-by-one delay"
+      "after_two_added_probes": "all four faults flagged, clean model not flagged",
+      "note": "deviations are derived from the model's own verdict and trace, not from the oracle's answer, so coverage claims stay falsifiable"
     },
     "live_round": {
-      "status": "three paid rounds run; no sequence reached judgement",
-      "cost_usd_reported_by_model service": [
-        0.035232,
-        0.028788,
-        0.017526
-      ],
-      "total_usd": 0.081546,
-      "rounds_stopped_at": 3,
-      "cause": "the proposals arrived in a container shape the reader did not accept, so every sequence was recorded as unusable instead of being judged",
-      "fix": "the reader now accepts three shapes and rejects unknown action names, covered by tests that run without any paid call",
-      "next": "a further round needs an approval decision; nothing was spent beyond the three authorised rounds"
+      "status": "one further explorer call run after the repair; sequences reached judgement",
+      "run_utc": "2026-10-29 11:58 UTC",
+      "proposed_sequences": 8,
+      "invalid_sequences": 0,
+      "evaluated_sequences": 8,
+      "comparisons": 32,
+      "agreements": 28,
+      "divergences": 4,
+      "guardian_calls": 0,
+      "historical_three_round_cause": "unknown; those raw replies were not retained",
+      "divergence_classification": "defect in our own written statement, not a protocol finding",
+      "divergence_detail": "one sequence, judged at four epochs: register validator 0 at epoch 0, then a registration whose proof uses leaf 1 at epoch 4. The shipped model reached the leaf rule; the oracle had forced the first-registration sentinel and stopped at the previous-epoch rule. The oracle was the wrong statement of that fixture.",
+      "fix": "oracle now names the change a wrong-leaf registration follows, the same way a change does; the captured sequence is replayed offline as a regression test and no further paid call was made",
+      "next": "none required; a guardian call was not needed because every disagreement was ours"
     },
-    "live_round_utc": "2026-10-29 09:44 UTC"
+    "live_round_utc": "2026-10-29 09:44 UTC",
+    "review_source": "handoff/chapter2-loop-review.md and handoff/practical-engineering-scope.md; all reported defects reproduced locally before repair",
+    "offline_repair_review": {
+      "tests_collected": 57,
+      "tests_passed": 49,
+      "tests_skipped": 8,
+      "exit_code": 0,
+      "skipped_scope": "real-cryptography dependencies are unavailable on this interpreter; their previous results were not revalidated in this review",
+      "loop_tests_passed": 17,
+      "comparison_scope": "accepted, reason and first-failure position; model state traces are recorded but not independently compared with oracle state",
+      "paid_calls_in_review": 0,
+      "historical_usage_file_unchanged": true,
+      "public_changes_in_review": false
+    }
   },
   "stage_5_preview": {
     "page": "frontend/dist/chapter2/index.html",
