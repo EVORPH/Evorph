@@ -3,6 +3,21 @@
 Dated in UTC. Entries cover the public repository and the deployed service at
 https://evorph.net. Detailed evidence lives in VERIFICATION.md.
 
+## 2026-10-29
+
+- Added the Chapter 02 research tree: a registry state model for the pinned
+  EIP-8450 draft, a separately written oracle, a bounded exhaustive sweep over
+  registration sequences, and a real leanXMSS and BLS path that accepts one
+  genuinely signed registration and refuses four forgeries.
+- Added a Chapter 02 page that renders events produced by the model, so the
+  displayed states, verdicts and reasons come from a run rather than from
+  hand-written copy; the header, mobile menu and footer link to it.
+- Recorded measured outcomes, evidence tiers and the limits of each tier in
+  `experiments/eip8450/result.json` and `archive.json`.
+- Stated the boundaries: this is a rule model with real signature checks against
+  pinned draft text, not a verification of the draft or a security claim about
+  Ethereum. The two-model round with paid provider calls is not part of this tree.
+
 ## 2026-10-28
 
 - Preserved official-vector bytes across automatic line-ending conversion and

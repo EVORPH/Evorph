@@ -1,0 +1,192 @@
+{
+  "scope": "registry state model, real signature path, bounded sweep, judging loop, preview page",
+  "crypto": [
+    "synthetic-callbacks",
+    "real-leanxmss",
+    "real-bls"
+  ],
+  "chapter": 2,
+  "title": "Chapter 02 — The Key Registry",
+  "specification": {
+    "eip": "EIP-8450 draft",
+    "eip_pull": "https://github.com/ethereum/EIPs/pull/12592",
+    "eip_commit": "a8a412e4a9355605bbe04fd01e8b2a03f399fb47",
+    "consensus_specs_pull": "https://github.com/ethereum/consensus-specs/pull/5782",
+    "consensus_specs_commit": "c031b137b7f6620679fdb1e9bd7d9a22470bc0e2",
+    "status_at_capture": "both open and unmerged; the version is pinned and not followed automatically"
+  },
+  "runs": [
+    {
+      "stage": "1-offline-rules",
+      "command": "python3 -m unittest discover -s experiments/eip8450 -p 'test_*.py' -v",
+      "python_version": "3.9",
+      "tests": 24,
+      "failures": 2,
+      "exit_code": 1,
+      "outcome": "two fixture defects, rules unchanged"
+    },
+    {
+      "stage": "1-offline-rules-after-fixture-fix",
+      "python_version": "3.9",
+      "tests": 24,
+      "failures": 0,
+      "exit_code": 0,
+      "duration_seconds": 0.001
+    },
+    {
+      "stage": "2-upstream-parity",
+      "python_version": "3.9",
+      "tests": 32,
+      "failures": 0,
+      "exit_code": 0,
+      "duration_seconds": 0.001
+    },
+    {
+      "stage": "3-real-crypto",
+      "command": "python3.11 -m unittest discover -s experiments/eip8450 -p 'test_*.py' -v",
+      "python_version": "3.11",
+      "tests": 40,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exit_code": 0,
+      "duration_seconds": 11.464,
+      "executed_at_utc": "2026-10-29 09:10:32 UTC"
+    },
+    {
+      "stage": "3-fallback-on-default-interpreter",
+      "command": "python3 -m unittest discover -s experiments/eip8450 -p 'test_*.py'",
+      "python_version": "3.9",
+      "tests": 40,
+      "skipped": 8,
+      "exit_code": 0,
+      "meaning": "real-crypto cases report as not run when the pinned libraries are absent"
+    },
+    {
+      "stage": "4-loop-and-sweep",
+      "command": "python3 -m unittest discover -s experiments/eip8450 -p 'test_*.py'",
+      "python_version": "3.11",
+      "tests": 54,
+      "failures": 0,
+      "exit_code": 0,
+      "duration_seconds": 10.656
+    },
+    {
+      "stage": "4-loop-and-sweep-on-default-interpreter",
+      "python_version": "3.9",
+      "tests": 54,
+      "skipped": 8,
+      "exit_code": 0
+    },
+    {
+      "stage": "5-page-rebuild",
+      "command": "python3 timeline.py > timeline.json && python3 build_page.py",
+      "rows": 9,
+      "exit_code": 0
+    }
+  ],
+  "dependencies_for_stage_3": {
+    "leanxmss": "py-lean-pq==0.7.0, cp311 wheels only",
+    "ssz_and_bls": "eth-consensus-specs==1.7.0a13 (newer releases require Python 3.12), plus ckzg",
+    "environment": "temporary virtual environment outside the project tree",
+    "project_files_added": [],
+    "note": "the pinned pull request names py-lean-pq==0.7.0; the released spec package version differs from the pull request and is recorded as a substitution"
+  },
+  "real_crypto_findings": [
+    "A real leanXMSS public key is 32 bytes and a real signature is exactly 2404 bytes, matching the proposal's declared types.",
+    "The leaf index is readable from the first four signature bytes, little-endian, as the proposal defines; signing at leaf 1 produced a valid signature that the registry still rejected.",
+    "The library raises on a bad signature instead of returning false; the proposal requires verification to return false without raising, so the wrapper matches upstream behaviour.",
+    "One genuine signed registration was accepted, and tampering the keys after signing, signing with another validator's BLS key, binding the possession to another validator, and using a non-zero leaf were each rejected.",
+    "Uniqueness rejected a second validator's fully valid proofs over an already registered key, showing the occupancy rule is independent of signature validity."
+  ],
+  "stage_2_upstream_review": {
+    "evidence": "29 test functions in the pinned pull request file for this operation, read from the saved patch",
+    "coverage_added": [
+      "registration before activation is accepted",
+      "registration for the last validator index",
+      "duplicate VRF root across validators is accepted",
+      "unregistered validator naming the genesis epoch is rejected",
+      "replay of a registration applied in the genesis epoch is rejected",
+      "change within the same epoch is rejected",
+      "same key with a different VRF root is rejected",
+      "possession signed by a different key is rejected"
+    ],
+    "rule_differences_found": "none; every acceptance and rejection matched the proposal wording",
+    "implementation_defect_found_and_fixed": "the success path rebuilt the validator entry field by field, which would drop state fields added later; it now replaces the entry immutably",
+    "modeling_change_for_real_verification": "proofs are carried as signature bytes rather than identity metadata, using the same stub layout convention as upstream's non-BLS mode",
+    "not_comparable_from_saved_evidence": "the upstream feature specification body was not captured locally, so rule ordering is confirmed against the proposal text only",
+    "outside_the_state_model": "domain and signing-root fork binding, SSZ sizes, gossip first-seen, parent execution requests, chain reorganisation"
+  },
+  "categories_covered": [
+    "normal first registration and legal change",
+    "replay and wrong previous change epoch",
+    "cooldown boundary before and exactly at the limit",
+    "registration after exit initiation",
+    "identity, possession and leaf-index binding",
+    "current key occupancy conflict, self reuse and reuse after release"
+  ],
+  "rejection_reasons_exercised": [
+    "INDEX_OUT_OF_RANGE",
+    "EXIT_INITIATED",
+    "PREVIOUS_EPOCH_MISMATCH",
+    "COOLDOWN_NOT_MET",
+    "AUTHORIZATION_INVALID",
+    "KEY_ALREADY_IN_USE",
+    "POSSESSION_INVALID"
+  ],
+  "specification_boundaries_confirmed_not_vulnerabilities": [
+    "the BLS signing key keeps the right to replace registered keys during the registration period",
+    "a VRF root may repeat across validators and openings are not verified by this proposal",
+    "a key released by a change can be registered again",
+    "an unregistered validator holds an all-zero entry that does not count as occupying the zero key"
+  ],
+  "not_implemented": [
+    "signer leaf allocation state and fault re-signing",
+    "VRF tree openings",
+    "gossip, block production limits, parent execution requests and chain reorganisation",
+    "the fork upgrade and the parallel-list invariant",
+    "the two-model research loop with live model calls, which needs the credential that exists only on the provider account"
+  ],
+  "interpretation": "Offline results describe a rule model against pinned specification text, real leanXMSS and BLS code accepting one genuine registration and refusing four forgeries, and a judging procedure that catches labelled faults. None of this verifies the proposal or makes a security claim about Ethereum, and nothing here is published or deployed.",
+  "publication": "internal for this batch; not published and not deployed",
+  "stage_4_loop": {
+    "purpose": "prove the deciding procedure before spending model calls",
+    "sweep": {
+      "comparisons": 3591,
+      "sequences_per_epoch": 399,
+      "epochs": 9,
+      "divergences": 0,
+      "meaning": "no difference between the model and a separately written oracle inside the enumerated space; outside it nothing is claimed"
+    },
+    "calibration": {
+      "labelled_faults": 5,
+      "base_probe_set_blind_spots": [
+        "cooldown_off_by_one",
+        "leaf_index_ignored"
+      ],
+      "after_adding_a_leaf_probe_and_a_boundary_probe": "all five faults are flagged and the clean model is not",
+      "honest_note": "a single-epoch sequence cannot reach the delay boundary, so the first probe set could never have caught an off-by-one delay"
+    },
+    "live_round": "not run; the provider credential is not part of this tree and each paid round needs operator approval"
+  },
+  "stage_5_preview": {
+    "page": "frontend/dist/chapter2/index.html",
+    "data_source": "timeline.json, produced by running the events through the rules model",
+    "events": 9,
+    "allowed": 4,
+    "refused": 5,
+    "verified": [
+      "markup balanced",
+      "inline script parses",
+      "every referenced element id exists",
+      "desktop and narrow renders checked headlessly",
+      "expanded state shows request, state before, state after, reason code and rule basis"
+    ],
+    "not_verified": [
+      "interaction in a real browser by the user",
+      "how the page sits inside the site navigation"
+    ],
+    "copy": "English, UTC timestamps, no operator or machine information",
+    "deployed": false
+  }
+}

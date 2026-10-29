@@ -130,7 +130,8 @@ test('all three existing pages link to the workspace without losing their own na
     assert.ok(page.includes('aria-label="Footer navigation"'), `${name} keeps its footer navigation`);
   }
   const index = await read('index.html');
-  assert.match(index, /desktop-nav[^>]*>\s*<a[^>]*href="lab\/"[^>]*>Observation room<\/a>\s*<\/nav>/);
+  assert.match(index, /desktop-nav[^>]*>\s*<a[^>]*href="lab\/"[^>]*>Observation room<\/a>/);
+  assert.match(index, /href="chapter2\/">The Key Registry<\/a>/);
   assert.match(index, /id="mobile-menu"[^>]*>(?:(?!<\/nav>).)*lab\//s);
   assert.match(index, /app\.js\?v=m14-1/);
 });

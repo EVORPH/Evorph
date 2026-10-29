@@ -1,0 +1,116 @@
+{
+  "chapter": "02",
+  "name": "Chapter 02 — The Key Registry",
+  "status": "offline rule model with a real signature path; not published and not deployed",
+  "pinned_sources": {
+    "proposal_commit": "a8a412e4a9355605bbe04fd01e8b2a03f399fb47",
+    "consensus_implementation_commit": "c031b137b7f6620679fdb1e9bd7d9a22470bc0e2",
+    "both_open_and_unmerged_when_captured": true,
+    "version_policy": "pinned; later draft changes are not followed automatically"
+  },
+  "evidence_tiers": [
+    {
+      "tier": "rule model",
+      "artifacts": [
+        "registry.py",
+        "test_registry.py"
+      ],
+      "shows": "the acceptance and refusal conditions transcribed from the proposal text behave as written",
+      "does_not_show": "any cryptographic property, and any claim about the network"
+    },
+    {
+      "tier": "upstream comparison",
+      "artifacts": [
+        "stage_2_upstream_review in result.json"
+      ],
+      "shows": "the model against the 29 pinned upstream test functions for this operation",
+      "does_not_show": "agreement on ordering, because the upstream feature specification body was not captured"
+    },
+    {
+      "tier": "real signatures",
+      "artifacts": [
+        "crypto_real.py",
+        "test_crypto.py"
+      ],
+      "shows": "one genuinely signed registration accepted and four genuinely forged ones refused, using upstream leanXMSS and BLS code",
+      "does_not_show": "the full proposal, its signing-domain choices, or its security"
+    },
+    {
+      "tier": "bounded sweep",
+      "artifacts": [
+        "sweep.py",
+        "oracle.py",
+        "loop.py"
+      ],
+      "shows": "no divergence between the model and a separately written oracle over the enumerated space",
+      "does_not_show": "absence of divergence outside that space"
+    },
+    {
+      "tier": "calibration",
+      "artifacts": [
+        "test_loop.py"
+      ],
+      "shows": "the deciding procedure flags each injected fault once the probe set covers it",
+      "does_not_show": "a finding; injected faults are labelled calibration and are never reported as discoveries"
+    }
+  ],
+  "measured": {
+    "tests_total": 54,
+    "tests_on_pinned_interpreter": 54,
+    "tests_skipped_without_libraries": 8,
+    "suite_exit_code": 0,
+    "sweep_comparisons": 3591,
+    "sweep_divergences": 0,
+    "calibration_faults": 5,
+    "calibration_blind_spots_in_base_probe_set": 2,
+    "timeline_events": 9,
+    "timeline_allowed": 4,
+    "timeline_refused": 5
+  },
+  "rules_exercised": [
+    "the named validator must exist",
+    "a validator that has initiated an exit cannot register",
+    "the registration must name the epoch of the change it follows",
+    "only an already-registered validator is rate limited",
+    "the signing key of the validator authorizes the registration",
+    "the new key must not be the current key of any validator",
+    "the proof of possession must use the reserved leaf and bind both identities"
+  ],
+  "by_design_not_vulnerabilities": [
+    "the signing key keeps the right to replace a registered key during the registration period",
+    "a VRF root may repeat across validators and openings are not checked by this draft",
+    "a key released by a change becomes available again",
+    "an unregistered validator holds an unset entry that does not occupy the zero key"
+  ],
+  "not_implemented": [
+    "leaf allocation inside a signer and fault re-signing",
+    "VRF tree openings",
+    "gossip, per-block limits, parent execution requests and chain reorganization",
+    "the fork upgrade and the parallel-list invariant",
+    "the live two-model round, which needs a paid provider credential",
+    "publication, deployment and any production call rate change"
+  ],
+  "public_output_rules": {
+    "language": "English",
+    "timestamps": "UTC, format YYYY-MM-DD HH:mm:ss UTC",
+    "excluded": [
+      "host names",
+      "user names",
+      "absolute local paths",
+      "device time zone",
+      "language preference",
+      "private addresses",
+      "credentials"
+    ],
+    "hashing": "computed over the redacted public payload only"
+  },
+  "awaiting_decision": [
+    "approval to spend model calls on the first live round, and the ceiling for it",
+    "where the chapter 2 page belongs in the site navigation and its final wording",
+    "whether the page keeps the observation-room palette or the main site palette"
+  ],
+  "on_launch_required_changes": [
+    "the site already uses the number 02 for a different section, so its heading and data entry must be renumbered or retitled before this chapter is published",
+    "locations: docs page section heading, and the experience data entry titled Split Trust"
+  ]
+}

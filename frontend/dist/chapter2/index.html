@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chapter 02 — The Key Registry</title>
+<meta name="description" content="A readable trace of how the pinned EIP-8450 draft admits or refuses a post-quantum key registration.">
+<style>
+:root{
+  --paper:#f3f2eb;--white:#fbfaf6;--ink:#20271e;--muted:#62695c;--line:#d6d8cb;
+  --carbon:#161d17;--lime:#d2f957;--green:#365c29;--green-bg:#e8efdc;--rust:#934b34;--rust-bg:#f4e7df;
+  --mono:ui-monospace,"SF Mono",Menlo,monospace;--sans:-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --ease:cubic-bezier(.23,1,.32,1);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:13px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
+header{position:sticky;top:0;z-index:3;background:var(--paper);border-bottom:1px solid var(--line);padding:14px 20px 12px}
+.kicker{font:11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+h1{margin:6px 0 4px;font-size:19px;font-weight:600;letter-spacing:-.01em}
+.sub{color:var(--muted);max-width:62ch}
+.stamp{font:11px/1.4 var(--mono);color:var(--muted);margin-top:8px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px 64px}
+.tier{display:inline-block;font:11px/1 var(--mono);padding:4px 7px;border:1px solid var(--line);border-radius:3px;background:var(--white);vertical-align:2px}
+.controls{display:flex;gap:8px;align-items:center;margin:18px 0 10px;flex-wrap:wrap}
+button{font:inherit;cursor:pointer;background:var(--white);color:var(--ink);border:1px solid var(--line);border-radius:3px;padding:5px 10px;transition:background-color .15s var(--ease),transform .15s var(--ease)}
+button:active{transform:translateY(1px)}
+button[aria-pressed=true]{background:var(--carbon);color:var(--lime);border-color:var(--carbon)}
+button:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.count{font:11px/1 var(--mono);color:var(--muted);margin-left:auto}
+ol{list-style:none;margin:0;padding:0}
+li{border-top:1px solid var(--line)}
+li:last-child{border-bottom:1px solid var(--line)}
+.row{width:100%;display:grid;grid-template-columns:56px 26px 1fr 96px auto;gap:12px;align-items:baseline;
+  background:none;border:0;border-radius:0;text-align:left;padding:7px 4px}
+.row:hover{background:var(--white)}
+.epoch::after{content:" +";color:var(--line)}
+.open .epoch::after{content:" \2212";color:var(--muted)}
+.epoch{font:12px/1.5 var(--mono);color:var(--muted)}
+.who{font:12px/1.5 var(--mono);color:var(--ink)}
+.what{min-width:0}
+.what b{font-weight:600}
+.what span{display:block;color:var(--muted)}
+.diff{font:11px/1.6 var(--mono);white-space:nowrap;color:var(--muted);text-align:right}
+.diff i{font-style:normal;color:var(--ink)}
+.verdict{font:11px/1 var(--mono);padding:4px 7px;border-radius:3px;white-space:nowrap;justify-self:end}
+.ok{background:var(--green-bg);color:var(--green)}
+.no{background:var(--rust-bg);color:var(--rust)}
+.body{display:grid;grid-template-rows:0fr;transition:grid-template-rows .28s var(--ease)}
+.open .body{grid-template-rows:1fr}
+.body>div{overflow:hidden}
+.detail{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;padding:2px 4px 16px 100px}
+.detail dl{margin:0}
+.detail dt{font:11px/1.6 var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.detail dd{margin:0 0 6px;font:12px/1.6 var(--mono);word-break:break-all}
+.basis{padding:2px 4px 16px 0;max-width:70ch;color:var(--muted);font-size:12px}
+.basis strong{color:var(--ink);font-weight:600}
+section.notes{margin-top:34px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:22px}
+section.notes h2{font-size:12px;font-weight:600;margin:0 0 6px}
+section.notes ul{margin:0;padding-left:16px;color:var(--muted);font-size:12px}
+footer{margin-top:34px;border-top:1px solid var(--line);padding-top:12px;font:11px/1.7 var(--mono);color:var(--muted)}
+@keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+li{animation:rise .4s var(--ease) both;animation-delay:calc(var(--i,0)*45ms)}
+@media (prefers-reduced-motion:reduce){li{animation:none}.body{transition:none}}
+@media (max-width:640px){
+  .row{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px}
+  .what{flex:1 1 100%;order:3;min-width:0}
+  .diff{flex:1 1 100%;order:4;text-align:left}
+  .verdict{order:5;flex:0 0 auto;margin-left:0}
+  .detail{padding-left:0}
+  header{padding:12px 14px 10px}
+  .wrap{padding:0 14px 48px}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="kicker">EVORPH · Chapter 02</div>
+  <h1>The Key Registry <span class="tier" id="tier"></span></h1>
+  <p class="sub">A trace of how the pinned draft admits or refuses a post-quantum key registration. Each line was produced by running the event through the rules model, not written by hand.</p>
+  <div class="stamp">Minimum change delay: <span id="delay"></span> epochs · Snapshot <time id="stamp"></time></div>
+</header>
+
+<div class="wrap">
+  <div class="controls">
+    <button id="all" type="button">Expand all</button>
+    <button id="f-all" type="button" aria-pressed="true">All</button>
+    <button id="f-ok" type="button" aria-pressed="false">Allowed</button>
+    <button id="f-no" type="button" aria-pressed="false">Refused</button>
+    <span class="count" id="count"></span>
+  </div>
+
+  <ol id="trace"></ol>
+
+  <section class="notes">
+    <div>
+      <h2>What these lines show</h2>
+      <ul id="shows"></ul>
+    </div>
+    <div>
+      <h2>What they do not show</h2>
+      <ul id="lacks"></ul>
+    </div>
+    <div>
+      <h2>Not a weakness, by design</h2>
+      <ul id="designed"></ul>
+    </div>
+  </section>
+
+  <footer>
+    <div>Pinned draft commit <span id="commit"></span></div>
+    <div>Times are UTC. This page contains no operator, machine or location information.</div>
+  </footer>
+</div>
+
+<script type="application/json" id="data">{"generated_at_utc":"2026-10-29 09:37:44 UTC","minimum_change_delay_epochs":4,"spec_commit":"a8a412e4a9355605bbe04fd01e8b2a03f399fb47","evidence_tier":"rule model, synthetic proofs","rows":[{"epoch":0,"validator_index":0,"event":"register","label":"validator 0 registers its first post-quantum key","request":{"previous_change_epoch":null,"xmss_public_key":"a0a0a0a0a0a0a0a0","vrf_root":"c0c0c0c0c0c0c0c0","possession_leaf":0},"accepted":true,"reason":null,"before":{"registered":false,"last_change_epoch":null,"xmss_public_key":"0000000000000000","exited":false},"after":{"registered":true,"last_change_epoch":0,"xmss_public_key":"a0a0a0a0a0a0a0a0","exited":false},"state_changed":true},{"epoch":1,"validator_index":1,"event":"register","label":"validator 1 registers a different key","request":{"previous_change_epoch":null,"xmss_public_key":"a1a1a1a1a1a1a1a1","vrf_root":"c0c0c0c0c0c0c0c0","possession_leaf":0},"accepted":true,"reason":null,"before":{"registered":false,"last_change_epoch":null,"xmss_public_key":"0000000000000000","exited":false},"after":{"registered":true,"last_change_epoch":1,"xmss_public_key":"a1a1a1a1a1a1a1a1","exited":false},"state_changed":true},{"epoch":1,"validator_index":0,"event":"stale","label":"an old registration is replayed after it already applied","request":{"previous_change_epoch":2,"xmss_public_key":"a2a2a2a2a2a2a2a2","vrf_root":"c0c0c0c0c0c0c0c0","possession_leaf":0},"accepted":false,"reason":"PREVIOUS_EPOCH_MISMATCH","before":{"registered":true,"last_change_epoch":0,"xmss_public_key":"a0a0a0a0a0a0a0a0","exited":false},"after":{"registered":true,"last_change_epoch":0,"xmss_public_key":"a0a0a0a0a0a0a0a0","exited":false},"state_changed":false},{"epoch":2,"validator_index":0,"event":"change","label":"validator 0 tries to change keys before the delay","request":{"previous_change_epoch":0,"xmss_public_key":"a3a3a3a3a3a3a3a3","vrf_root":"c0c0c0c0c0c0c0c0","possession_leaf":0},"accepted":false,"reason":"COOLDOWN_NOT_MET","before":{"registered":true,"last_change_epoch":0,"xmss_public_key":"a0a0a0a0a0a0a0a0","exited":false},"after":{"registered":true,"last_change_epoch":0,"xmss_public_key":"a0a0a0a0a0a0a0a0","exited":false},"state_changed":false},{"epoch":4,"validator_index":0,"event":"change","label":"validator 0 changes keys exactly at the delay boundary","request":{"previous_change_epoch":0,"xmss_public_key":"a2a2a2a2a2a2a2a2","vrf_root":"c0c0c0c0c0c0c0c0","possession_leaf":0},"accepted":true,"reason":null,"before":{"registered":true,"last_change_epoch":0,"xmss_public_key":"a0a0a0a0a0a0a0a0","exited":false},"after":{"registered":true,"last_change_epoch":4,"xmss_public_key":"a2a2a2a2a2a2a2a2","exited":false},"state_changed":true},{"epoch":8,"validator_index":0,"event":"vrf_only","label":"validator 0 keeps its key and changes only the VRF root","request":{"previous_change_epoch":4,"xmss_public_key":"a2a2a2a2a2a2a2a2","vrf_root":"0808080808080808","possession_leaf":0},"accepted":false,"reason":"KEY_ALREADY_IN_USE","before":{"registered":true,"last_change_epoch":4,"xmss_public_key":"a2a2a2a2a2a2a2a2","exited":false},"after":{"registered":true,"last_change_epoch":4,"xmss_public_key":"a2a2a2a2a2a2a2a2","exited":false},"state_changed":false},{"epoch":8,"validator_index":1,"event":"poach","label":"validator 1 tries to take validator 0's current key","request":{"previous_change_epoch":1,"xmss_public_key":"a2a2a2a2a2a2a2a2","vrf_root":"c0c0c0c0c0c0c0c0","possession_leaf":0},"accepted":false,"reason":"KEY_ALREADY_IN_USE","before":{"registered":true,"last_change_epoch":1,"xmss_public_key":"a1a1a1a1a1a1a1a1","exited":false},"after":{"registered":true,"last_change_epoch":1,"xmss_public_key":"a1a1a1a1a1a1a1a1","exited":false},"state_changed":false},{"epoch":8,"validator_index":1,"event":"release","label":"validator 1 registers the key validator 0 released","request":{"previous_change_epoch":1,"xmss_public_key":"a0a0a0a0a0a0a0a0","vrf_root":"c0c0c0c0c0c0c0c0","possession_leaf":0},"accepted":true,"reason":null,"before":{"registered":true,"last_change_epoch":1,"xmss_public_key":"a1a1a1a1a1a1a1a1","exited":false},"after":{"registered":true,"last_change_epoch":8,"xmss_public_key":"a0a0a0a0a0a0a0a0","exited":false},"state_changed":true},{"epoch":8,"validator_index":2,"event":"exited","label":"a validator that has initiated an exit tries to register","request":{"previous_change_epoch":null,"xmss_public_key":"a5a5a5a5a5a5a5a5","vrf_root":"c0c0c0c0c0c0c0c0","possession_leaf":0},"accepted":false,"reason":"EXIT_INITIATED","before":{"registered":false,"last_change_epoch":null,"xmss_public_key":"0000000000000000","exited":true},"after":{"registered":false,"last_change_epoch":null,"xmss_public_key":"0000000000000000","exited":true},"state_changed":false}],"totals":{"events":9,"accepted":4,"rejected":5}}</script>
+<script>
+const RULE = {
+  INDEX_OUT_OF_RANGE:'Rule 1 — the named validator index must exist.',
+  EXIT_INITIATED:'Rule 2 — a validator that has initiated an exit cannot register.',
+  PREVIOUS_EPOCH_MISMATCH:'Rule 3 — the registration must name the epoch of the last change it follows, so an old request cannot be replayed.',
+  COOLDOWN_NOT_MET:'Rule 4 — only a validator that already holds a key is rate limited: the current epoch must reach the stored epoch plus the delay.',
+  AUTHORIZATION_INVALID:'Rule 5 — the signing key of the validator authorizes the registration.',
+  KEY_ALREADY_IN_USE:'Rule 6 — the new key must not be the current key of any validator, including the one registering.',
+  POSSESSION_INVALID:'Rule 7 — the proof of possession must be signed at the reserved leaf and bind the signing identity and the new key together.'
+};
+const SHORT = {
+  INDEX_OUT_OF_RANGE:'no such validator',
+  EXIT_INITIATED:'already exiting',
+  PREVIOUS_EPOCH_MISMATCH:'stale request',
+  COOLDOWN_NOT_MET:'too early',
+  AUTHORIZATION_INVALID:'not authorized',
+  KEY_ALREADY_IN_USE:'key taken',
+  POSSESSION_INVALID:'proof rejected'
+};
+const data = JSON.parse(document.getElementById('data').textContent);
+const short = v => v === null || v === undefined ? 'never' : v;
+const trace = document.getElementById('trace');
+let filter = 'all';
+
+function line(row, index){
+  const li = document.createElement('li');
+  li.style.setProperty('--i', index);
+  li.dataset.kind = row.accepted ? 'ok' : 'no';
+  const before = row.before, after = row.after;
+  const epochDiff = before.last_change_epoch !== after.last_change_epoch;
+  const keyDiff = before.xmss_public_key !== after.xmss_public_key;
+  li.innerHTML = `
+    <button class="row" type="button" aria-expanded="false">
+      <span class="epoch">epoch ${row.epoch}</span>
+      <span class="who">v${row.validator_index}</span>
+      <span class="what"><b>${row.label}</b><span>${row.event} · key ${row.request.xmss_public_key.slice(0,8)} · proof leaf ${row.request.possession_leaf}</span></span>
+      <span class="diff">${keyDiff||epochDiff ? `<i>${short(before.last_change_epoch)}</i> → <i>${short(after.last_change_epoch)}</i>` : 'unchanged'}</span>
+      <span class="verdict ${row.accepted?'ok':'no'}">${row.accepted?'allowed':SHORT[row.reason]}</span>
+    </button>
+    <div class="body"><div>
+      <div class="detail">
+        <dl>
+          <dt>Request</dt>
+          <dd>previous change epoch: ${short(row.request.previous_change_epoch)}</dd>
+          <dd>new key: ${row.request.xmss_public_key}</dd>
+          <dd>VRF root: ${row.request.vrf_root}</dd>
+          <dd>proof leaf index: ${row.request.possession_leaf}</dd>
+          <dd>reason code: ${row.reason || 'none'}</dd>
+        </dl>
+        <dl>
+          <dt>State before</dt>
+          <dd>registered: ${before.registered} · last change: ${short(before.last_change_epoch)}</dd>
+          <dd>key: ${before.xmss_public_key}</dd>
+          <dt>State after</dt>
+          <dd>registered: ${after.registered} · last change: ${short(after.last_change_epoch)}</dd>
+          <dd>key: ${after.xmss_public_key}</dd>
+          <dd>state changed: ${row.state_changed}</dd>
+        </dl>
+      </div>
+      <p class="basis"><strong>Rule basis.</strong> ${row.accepted ? 'No rule below was broken, so the keys and the change epoch were written.' : RULE[row.reason.split('@')[0]]}</p>
+    </div></div>`;
+  const btn = li.querySelector('.row');
+  btn.addEventListener('click', () => {
+    const open = li.classList.toggle('open');
+    btn.setAttribute('aria-expanded', open);
+  });
+  return li;
+}
+
+function render(){
+  trace.textContent = '';
+  const rows = data.rows.filter(row => filter === 'all' || (filter === 'ok') === row.accepted);
+  rows.forEach((row, i) => trace.appendChild(line(row, i)));
+  document.getElementById('count').textContent =
+    `${data.totals.accepted} allowed · ${data.totals.rejected} refused · ${data.totals.events} events`;
+  document.getElementById('all').textContent = 'Expand all';
+}
+
+document.getElementById('tier').textContent = data.evidence_tier;
+document.getElementById('delay').textContent = data.minimum_change_delay_epochs;
+document.getElementById('stamp').textContent = data.generated_at_utc;
+document.getElementById('commit').textContent = data.spec_commit;
+const fill = (id, items) => {
+  const el = document.getElementById(id);
+  items.forEach(text => { const li = document.createElement('li'); li.textContent = text; el.appendChild(li); });
+};
+fill('shows', [
+  'A first registration writes the key and the epoch it changed.',
+  'A replay of an applied registration is refused because it names a superseded epoch.',
+  'A change one epoch short of the delay is refused; one exactly at the delay is allowed.',
+  'A key already held by anyone is refused, including the current key of the validator that is registering.',
+  'A refusal never changes the stored state.'
+]);
+fill('lacks', [
+  'The proofs on this page are test doubles. Real leanXMSS and BLS checks are proven in a separate test file, not here.',
+  'This is not a verification of the draft, of the cryptography, or of Ethereum.',
+  'Leaf management in the signer, VRF openings, gossip and chain reorganization are not modeled.'
+]);
+fill('designed', [
+  'The signing key keeps the right to replace a registered key during the registration period.',
+  'A VRF root may repeat across validators, and openings are not checked by this draft.',
+  'A key released by a change becomes available again.'
+]);
+[['f-all','all'],['f-ok','ok'],['f-no','no']].forEach(([id,kind]) => {
+  document.getElementById(id).addEventListener('click', event => {
+    filter = kind;
+    ['f-all','f-ok','f-no'].forEach(other =>
+      document.getElementById(other).setAttribute('aria-pressed', String(other === id)));
+    render();
+  });
+});
+document.getElementById('all').addEventListener('click', event => {
+  const open = trace.querySelectorAll('.open').length === 0;
+  trace.querySelectorAll('li').forEach(li => li.classList.toggle('open', open));
+  trace.querySelectorAll('.row').forEach(btn => btn.setAttribute('aria-expanded', String(open)));
+  event.currentTarget.textContent = open ? 'Collapse all' : 'Expand all';
+});
+render();
+</script>
+</body>
+</html>

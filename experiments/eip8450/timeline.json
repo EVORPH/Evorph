@@ -1,0 +1,256 @@
+{
+  "generated_at_utc": "2026-10-29 09:37:44 UTC",
+  "minimum_change_delay_epochs": 4,
+  "spec_commit": "a8a412e4a9355605bbe04fd01e8b2a03f399fb47",
+  "evidence_tier": "rule model, synthetic proofs",
+  "rows": [
+    {
+      "epoch": 0,
+      "validator_index": 0,
+      "event": "register",
+      "label": "validator 0 registers its first post-quantum key",
+      "request": {
+        "previous_change_epoch": null,
+        "xmss_public_key": "a0a0a0a0a0a0a0a0",
+        "vrf_root": "c0c0c0c0c0c0c0c0",
+        "possession_leaf": 0
+      },
+      "accepted": true,
+      "reason": null,
+      "before": {
+        "registered": false,
+        "last_change_epoch": null,
+        "xmss_public_key": "0000000000000000",
+        "exited": false
+      },
+      "after": {
+        "registered": true,
+        "last_change_epoch": 0,
+        "xmss_public_key": "a0a0a0a0a0a0a0a0",
+        "exited": false
+      },
+      "state_changed": true
+    },
+    {
+      "epoch": 1,
+      "validator_index": 1,
+      "event": "register",
+      "label": "validator 1 registers a different key",
+      "request": {
+        "previous_change_epoch": null,
+        "xmss_public_key": "a1a1a1a1a1a1a1a1",
+        "vrf_root": "c0c0c0c0c0c0c0c0",
+        "possession_leaf": 0
+      },
+      "accepted": true,
+      "reason": null,
+      "before": {
+        "registered": false,
+        "last_change_epoch": null,
+        "xmss_public_key": "0000000000000000",
+        "exited": false
+      },
+      "after": {
+        "registered": true,
+        "last_change_epoch": 1,
+        "xmss_public_key": "a1a1a1a1a1a1a1a1",
+        "exited": false
+      },
+      "state_changed": true
+    },
+    {
+      "epoch": 1,
+      "validator_index": 0,
+      "event": "stale",
+      "label": "an old registration is replayed after it already applied",
+      "request": {
+        "previous_change_epoch": 2,
+        "xmss_public_key": "a2a2a2a2a2a2a2a2",
+        "vrf_root": "c0c0c0c0c0c0c0c0",
+        "possession_leaf": 0
+      },
+      "accepted": false,
+      "reason": "PREVIOUS_EPOCH_MISMATCH",
+      "before": {
+        "registered": true,
+        "last_change_epoch": 0,
+        "xmss_public_key": "a0a0a0a0a0a0a0a0",
+        "exited": false
+      },
+      "after": {
+        "registered": true,
+        "last_change_epoch": 0,
+        "xmss_public_key": "a0a0a0a0a0a0a0a0",
+        "exited": false
+      },
+      "state_changed": false
+    },
+    {
+      "epoch": 2,
+      "validator_index": 0,
+      "event": "change",
+      "label": "validator 0 tries to change keys before the delay",
+      "request": {
+        "previous_change_epoch": 0,
+        "xmss_public_key": "a3a3a3a3a3a3a3a3",
+        "vrf_root": "c0c0c0c0c0c0c0c0",
+        "possession_leaf": 0
+      },
+      "accepted": false,
+      "reason": "COOLDOWN_NOT_MET",
+      "before": {
+        "registered": true,
+        "last_change_epoch": 0,
+        "xmss_public_key": "a0a0a0a0a0a0a0a0",
+        "exited": false
+      },
+      "after": {
+        "registered": true,
+        "last_change_epoch": 0,
+        "xmss_public_key": "a0a0a0a0a0a0a0a0",
+        "exited": false
+      },
+      "state_changed": false
+    },
+    {
+      "epoch": 4,
+      "validator_index": 0,
+      "event": "change",
+      "label": "validator 0 changes keys exactly at the delay boundary",
+      "request": {
+        "previous_change_epoch": 0,
+        "xmss_public_key": "a2a2a2a2a2a2a2a2",
+        "vrf_root": "c0c0c0c0c0c0c0c0",
+        "possession_leaf": 0
+      },
+      "accepted": true,
+      "reason": null,
+      "before": {
+        "registered": true,
+        "last_change_epoch": 0,
+        "xmss_public_key": "a0a0a0a0a0a0a0a0",
+        "exited": false
+      },
+      "after": {
+        "registered": true,
+        "last_change_epoch": 4,
+        "xmss_public_key": "a2a2a2a2a2a2a2a2",
+        "exited": false
+      },
+      "state_changed": true
+    },
+    {
+      "epoch": 8,
+      "validator_index": 0,
+      "event": "vrf_only",
+      "label": "validator 0 keeps its key and changes only the VRF root",
+      "request": {
+        "previous_change_epoch": 4,
+        "xmss_public_key": "a2a2a2a2a2a2a2a2",
+        "vrf_root": "0808080808080808",
+        "possession_leaf": 0
+      },
+      "accepted": false,
+      "reason": "KEY_ALREADY_IN_USE",
+      "before": {
+        "registered": true,
+        "last_change_epoch": 4,
+        "xmss_public_key": "a2a2a2a2a2a2a2a2",
+        "exited": false
+      },
+      "after": {
+        "registered": true,
+        "last_change_epoch": 4,
+        "xmss_public_key": "a2a2a2a2a2a2a2a2",
+        "exited": false
+      },
+      "state_changed": false
+    },
+    {
+      "epoch": 8,
+      "validator_index": 1,
+      "event": "poach",
+      "label": "validator 1 tries to take validator 0's current key",
+      "request": {
+        "previous_change_epoch": 1,
+        "xmss_public_key": "a2a2a2a2a2a2a2a2",
+        "vrf_root": "c0c0c0c0c0c0c0c0",
+        "possession_leaf": 0
+      },
+      "accepted": false,
+      "reason": "KEY_ALREADY_IN_USE",
+      "before": {
+        "registered": true,
+        "last_change_epoch": 1,
+        "xmss_public_key": "a1a1a1a1a1a1a1a1",
+        "exited": false
+      },
+      "after": {
+        "registered": true,
+        "last_change_epoch": 1,
+        "xmss_public_key": "a1a1a1a1a1a1a1a1",
+        "exited": false
+      },
+      "state_changed": false
+    },
+    {
+      "epoch": 8,
+      "validator_index": 1,
+      "event": "release",
+      "label": "validator 1 registers the key validator 0 released",
+      "request": {
+        "previous_change_epoch": 1,
+        "xmss_public_key": "a0a0a0a0a0a0a0a0",
+        "vrf_root": "c0c0c0c0c0c0c0c0",
+        "possession_leaf": 0
+      },
+      "accepted": true,
+      "reason": null,
+      "before": {
+        "registered": true,
+        "last_change_epoch": 1,
+        "xmss_public_key": "a1a1a1a1a1a1a1a1",
+        "exited": false
+      },
+      "after": {
+        "registered": true,
+        "last_change_epoch": 8,
+        "xmss_public_key": "a0a0a0a0a0a0a0a0",
+        "exited": false
+      },
+      "state_changed": true
+    },
+    {
+      "epoch": 8,
+      "validator_index": 2,
+      "event": "exited",
+      "label": "a validator that has initiated an exit tries to register",
+      "request": {
+        "previous_change_epoch": null,
+        "xmss_public_key": "a5a5a5a5a5a5a5a5",
+        "vrf_root": "c0c0c0c0c0c0c0c0",
+        "possession_leaf": 0
+      },
+      "accepted": false,
+      "reason": "EXIT_INITIATED",
+      "before": {
+        "registered": false,
+        "last_change_epoch": null,
+        "xmss_public_key": "0000000000000000",
+        "exited": true
+      },
+      "after": {
+        "registered": false,
+        "last_change_epoch": null,
+        "xmss_public_key": "0000000000000000",
+        "exited": true
+      },
+      "state_changed": false
+    }
+  ],
+  "totals": {
+    "events": 9,
+    "accepted": 4,
+    "rejected": 5
+  }
+}
