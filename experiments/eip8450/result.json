@@ -148,7 +148,7 @@
     "the two-model research loop with live model calls, which needs the credential that exists only on the production host"
   ],
   "interpretation": "Offline results describe a rule model against pinned specification text, real leanXMSS and BLS code accepting one genuine registration and refusing four forgeries, and a judging procedure that catches labelled faults. None of this verifies the proposal or makes a security claim about Ethereum, and nothing here is published or deployed.",
-  "publication": "internal for this batch; not published and not deployed",
+  "publication": "the web page and the research tree are published; the two-model adapter, raw provider replies and cost records stay outside the published tree",
   "stage_4_loop": {
     "purpose": "prove the deciding procedure before spending model calls",
     "sweep": {
@@ -234,7 +234,8 @@
     ],
     "pricing": {
       "note": "provider-reported amounts; platform and top-up fees were not established"
-    }
+    },
+    "artifacts_note": "loop.py, test_loop.py, calibration.py and live_round.py stay in the private workspace because they carry the model-service adapter; the published tree carries replay_round.py with the recorded sequences so the 8/32 result can be checked without any model"
   },
   "stage_5_preview": {
     "page": "frontend/dist/chapter2/index.html",
@@ -250,10 +251,27 @@
       "expanded state shows request, state before, state after, reason code and rule basis"
     ],
     "not_verified": [
-      "interaction in a real browser during review",
-      "how the page sits inside the site navigation"
+      "interaction in a real browser during operator review"
     ],
     "copy": "English, UTC timestamps, no operator or machine information",
-    "deployed": false
+    "deployed": true,
+    "live_at": "https://evorph.net/chapter2/ and https://evorph.net/docs.html#chapter-two"
+  },
+  "reproduce": {
+    "pinned_draft": "a8a412e4a9355605bbe04fd01e8b2a03f399fb47 (unmerged when captured; not followed automatically)",
+    "offline_rule_tests": "python3 -m unittest discover -s experiments/eip8450 -p 'test_*.py'",
+    "expected_offline": "43 tests collected in the published tree: 35 rule tests pass and 8 real-signature tests skip because the pinned libraries are absent",
+    "optional_real_signatures": "create a Python 3.11 environment, install py-lean-pq==0.7.0 and eth-consensus-specs==1.7.0a13 with ckzg, then run the same command",
+    "replay_the_recorded_round": "python3 experiments/eip8450/replay_round.py",
+    "counts_measured_locally": {
+      "rule": 35,
+      "real_signature": 8,
+      "loop": 19,
+      "published_tree_total": 43,
+      "private_workspace_total": 62,
+      "skipped_on_python39": 8,
+      "note": "the private workspace adds 19 loop tests that carry the model-service adapter"
+    },
+    "published_tree_command_result": "python3 -m unittest discover -s experiments/eip8450 -p 'test_*.py' -> Ran 43 tests, OK (skipped=8)"
   }
 }

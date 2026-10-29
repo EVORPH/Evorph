@@ -6,7 +6,9 @@ Cryptographic checks are synthetic test doubles, so a pass here shows that the
 state rules match the specification wording; it shows nothing about signatures.
 """
 
+import json
 import unittest
+from pathlib import Path
 from copy import deepcopy
 
 from registry import (
@@ -561,6 +563,48 @@ class UpstreamParityTest(unittest.TestCase):
 
         self.assertFalse(outcome.accepted)
         self.assertEqual(outcome.reason, "POSSESSION_INVALID")
+
+
+class WrongLeafReachesThePossessionRuleTest(unittest.TestCase):
+    """A proof signed at the wrong leaf must be stopped by that rule, not earlier."""
+
+    def test_a_delayed_wrong_leaf_registration_is_refused_for_its_proof(self):
+        config = RegistryConfig(min_change_delay=PRESET_MAIN_DELAY)
+        first = process_pq_key_registration(
+            state_of(validator()), registration(), current_epoch=0, config=config
+        )
+        later = process_pq_key_registration(
+            first.state,
+            registration(pk=keys(xmss=KEY_B), previous=0, leaf=1),
+            current_epoch=PRESET_MAIN_DELAY,
+            config=config,
+        )
+
+        self.assertTrue(first.accepted)
+        self.assertEqual(later.reason, "POSSESSION_INVALID")
+        self.assertIsNone(later.state)
+
+    def test_the_written_statement_reaches_the_same_rule_at_the_same_step(self):
+        from oracle import DELAY, oracle_verdict
+
+        verdict = oracle_verdict([("first0", 0, 0), ("leaf1_0", 1, DELAY)], 0)
+
+        self.assertFalse(verdict["accepted"])
+        self.assertEqual(verdict["reason"], "POSSESSION_INVALID")
+        self.assertEqual(verdict["position"], 1)
+
+    def test_the_replay_of_the_recorded_round_still_agrees(self):
+        import subprocess
+        import sys
+
+        result = subprocess.run(
+            [sys.executable, "replay_round.py"], capture_output=True, text=True, cwd=str(Path(__file__).resolve().parent)
+        )
+        summary = json.loads(result.stdout)
+
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(summary["disagreements"], 0)
+        self.assertTrue(summary["replay_matches_record"])
 
 
 if __name__ == "__main__":

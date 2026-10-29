@@ -73,9 +73,15 @@ def oracle_verdict(sequence, epoch):
         step_epoch = step[2] if len(step) > 2 else epoch
         action, index = ACTIONS[name]
         entry = state[index]
-        if action in ("register", "register_wrong_leaf"):
+        if action == "register":
             new_key = xmss_public_key(generation)
             previous = SENTINEL
+        elif action == "register_wrong_leaf":
+            # Otherwise a valid registration whose proof uses a non-zero leaf, so
+            # the leaf rule is the one that must reject it. It names the change it
+            # follows, exactly like a change does.
+            new_key = xmss_public_key(generation)
+            previous = entry["change"]
         elif action == "change":
             new_key = xmss_public_key(generation)
             previous = entry["change"]

@@ -1,0 +1,156 @@
+{
+  "what_this_is": "the action sequences proposed by one model call, kept so the reported comparison can be replayed offline without any model",
+  "recorded_at_utc": "2026-10-29 12:17 UTC",
+  "code_version": "local workspace at the recorded time, which contained the wrong-leaf fixture fix; the published tree received that same fix in the commit that adds this file",
+  "draft_pin": "a8a412e4a9355605bbe04fd01e8b2a03f399fb47",
+  "epochs": [
+    0,
+    3,
+    4,
+    8
+  ],
+  "compared_on": [
+    "accepted or refused",
+    "rejection reason",
+    "position of the first refusal"
+  ],
+  "not_compared_here": "full state after every step; the rule tests cover that",
+  "recorded": {
+    "comparisons": 32,
+    "agreements": 32,
+    "disagreements": 0
+  },
+  "sequences": [
+    {
+      "label": "sequence 1",
+      "steps": [
+        {
+          "action": "first0",
+          "generation": 0,
+          "epoch": 0
+        },
+        {
+          "action": "change0",
+          "generation": 1,
+          "epoch": 0
+        }
+      ]
+    },
+    {
+      "label": "sequence 2",
+      "steps": [
+        {
+          "action": "first0",
+          "generation": 0,
+          "epoch": 0
+        },
+        {
+          "action": "change0",
+          "generation": 1,
+          "epoch": 1
+        }
+      ]
+    },
+    {
+      "label": "sequence 3",
+      "steps": [
+        {
+          "action": "exited0",
+          "generation": 0
+        },
+        {
+          "action": "first0",
+          "generation": 1
+        }
+      ]
+    },
+    {
+      "label": "sequence 4",
+      "steps": [
+        {
+          "action": "first0",
+          "generation": 0,
+          "epoch": 0
+        },
+        {
+          "action": "exited0",
+          "generation": 1
+        },
+        {
+          "action": "change0",
+          "generation": 2,
+          "epoch": 8
+        }
+      ]
+    },
+    {
+      "label": "sequence 5",
+      "steps": [
+        {
+          "action": "leaf1_0",
+          "generation": 0
+        }
+      ]
+    },
+    {
+      "label": "sequence 6",
+      "steps": [
+        {
+          "action": "first0",
+          "generation": 0,
+          "epoch": 0
+        },
+        {
+          "action": "change0",
+          "generation": 1,
+          "epoch": 4
+        },
+        {
+          "action": "first1",
+          "generation": 0,
+          "epoch": 4
+        }
+      ]
+    },
+    {
+      "label": "sequence 7",
+      "steps": [
+        {
+          "action": "first0",
+          "generation": 2,
+          "epoch": 0
+        },
+        {
+          "action": "first1",
+          "generation": 2,
+          "epoch": 1
+        }
+      ]
+    },
+    {
+      "label": "sequence 8",
+      "steps": [
+        {
+          "action": "first0",
+          "generation": 1,
+          "epoch": 0
+        },
+        {
+          "action": "change0",
+          "generation": 1,
+          "epoch": 4
+        },
+        {
+          "action": "poach1",
+          "generation": 1,
+          "epoch": 4
+        },
+        {
+          "action": "stale0",
+          "generation": 2,
+          "epoch": 8
+        }
+      ]
+    }
+  ]
+}

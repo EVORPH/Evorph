@@ -1,7 +1,7 @@
 {
   "chapter": "02",
   "name": "Chapter 02 — The Key Registry",
-  "status": "offline rule model with a real signature path; not published and not deployed",
+  "status": "rule model with a real signature path; the web page is live, the chapter is not wired into the production research loop",
   "pinned_sources": {
     "proposal_commit": "a8a412e4a9355605bbe04fd01e8b2a03f399fb47",
     "consensus_implementation_commit": "c031b137b7f6620679fdb1e9bd7d9a22470bc0e2",
@@ -131,14 +131,18 @@
     "hashing": "computed over the redacted public payload only"
   },
   "awaiting_decision": [
-    "where the chapter 2 page belongs in the site navigation and its final wording",
-    "whether the page keeps the observation-room palette or the main site palette",
-    "whether to enable the guardian role in a future round, which is a second charge per divergence",
-    "where the chapter 02 page belongs in the site navigation and its final wording",
-    "whether the page keeps the observation-room palette or the main site palette"
+    "whether to wire chapter 02 into the production research loop, which changes call frequency and spend",
+    "whether to enable the guardian role in a future round, which is a second charge per divergence"
   ],
   "on_launch_required_changes": [
     "the site already uses the number 02 for a different section, so its heading and data entry must be renumbered or retitled before this chapter is published",
     "locations: docs page section heading, and the experience data entry titled Split Trust"
-  ]
+  ],
+  "published_surfaces": {
+    "chapter_page": "https://evorph.net/chapter2/",
+    "documentation_page": "https://evorph.net/docs.html#chapter-two",
+    "research_tree": "https://github.com/EVORPH/Evorph/tree/main/experiments/eip8450",
+    "web_trace_rows_are_static_model_output": true,
+    "model_round_result": "8 sequences over 32 comparisons, reported separately from the nine web trace rows"
+  }
 }
