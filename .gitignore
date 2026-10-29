@@ -16,5 +16,6 @@ npm-debug.log*
 *.log
 .env
 .env.*
+.private/
 .DS_Store
 Thumbs.db
