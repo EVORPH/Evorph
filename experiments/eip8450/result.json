@@ -145,7 +145,7 @@
     "VRF tree openings",
     "gossip, block production limits, parent execution requests and chain reorganisation",
     "the fork upgrade and the parallel-list invariant",
-    "the two-model research loop with live model calls, which needs the credential that exists only on the provider account"
+    "the two-model research loop with live model calls, which needs the credential that exists only on the production host"
   ],
   "interpretation": "Offline results describe a rule model against pinned specification text, real leanXMSS and BLS code accepting one genuine registration and refusing four forgeries, and a judging procedure that catches labelled faults. None of this verifies the proposal or makes a security claim about Ethereum, and nothing here is published or deployed.",
   "publication": "internal for this batch; not published and not deployed",
@@ -167,7 +167,20 @@
       "after_adding_a_leaf_probe_and_a_boundary_probe": "all five faults are flagged and the clean model is not",
       "honest_note": "a single-epoch sequence cannot reach the delay boundary, so the first probe set could never have caught an off-by-one delay"
     },
-    "live_round": "not run; the provider credential is not part of this tree and each paid round needs operator approval"
+    "live_round": {
+      "status": "three paid rounds run; no sequence reached judgement",
+      "cost_usd_reported_by_model service": [
+        0.035232,
+        0.028788,
+        0.017526
+      ],
+      "total_usd": 0.081546,
+      "rounds_stopped_at": 3,
+      "cause": "the proposals arrived in a container shape the reader did not accept, so every sequence was recorded as unusable instead of being judged",
+      "fix": "the reader now accepts three shapes and rejects unknown action names, covered by tests that run without any paid call",
+      "next": "a further round needs an approval decision; nothing was spent beyond the three authorised rounds"
+    },
+    "live_round_utc": "2026-10-29 09:44 UTC"
   },
   "stage_5_preview": {
     "page": "frontend/dist/chapter2/index.html",
@@ -183,7 +196,7 @@
       "expanded state shows request, state before, state after, reason code and rule basis"
     ],
     "not_verified": [
-      "interaction in a real browser by the user",
+      "interaction in a real browser during review",
       "how the page sits inside the site navigation"
     ],
     "copy": "English, UTC timestamps, no operator or machine information",

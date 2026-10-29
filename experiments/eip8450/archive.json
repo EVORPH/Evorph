@@ -52,6 +52,14 @@
       ],
       "shows": "the deciding procedure flags each injected fault once the probe set covers it",
       "does_not_show": "a finding; injected faults are labelled calibration and are never reported as discoveries"
+    },
+    {
+      "tier": "live two-model round",
+      "artifacts": [
+        "model service round record, kept outside this tree"
+      ],
+      "shows": "three paid rounds were run and priced; the proposals did not reach judgement because the reader rejected their container shape",
+      "does_not_show": "any research finding; no sequence was judged"
     }
   ],
   "measured": {
@@ -65,7 +73,9 @@
     "calibration_blind_spots_in_base_probe_set": 2,
     "timeline_events": 9,
     "timeline_allowed": 4,
-    "timeline_refused": 5
+    "timeline_refused": 5,
+    "live_rounds_paid": 3,
+    "live_rounds_total_usd": 0.081546
   },
   "rules_exercised": [
     "the named validator must exist",
@@ -87,7 +97,7 @@
     "VRF tree openings",
     "gossip, per-block limits, parent execution requests and chain reorganization",
     "the fork upgrade and the parallel-list invariant",
-    "the live two-model round, which needs a paid provider credential",
+    "the live two-model round, which needs a credential held only on the production host",
     "publication, deployment and any production call rate change"
   ],
   "public_output_rules": {
@@ -105,7 +115,7 @@
     "hashing": "computed over the redacted public payload only"
   },
   "awaiting_decision": [
-    "approval to spend model calls on the first live round, and the ceiling for it",
+    "approval for a further paid round, and the ceiling for it; three authorised rounds are spent",
     "where the chapter 2 page belongs in the site navigation and its final wording",
     "whether the page keeps the observation-room palette or the main site palette"
   ],
