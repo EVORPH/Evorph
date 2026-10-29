@@ -181,7 +181,8 @@
       "divergence_classification": "defect in our own written statement, not a protocol finding",
       "divergence_detail": "one sequence, judged at four epochs: register validator 0 at epoch 0, then a registration whose proof uses leaf 1 at epoch 4. The shipped model reached the leaf rule; the oracle had forced the first-registration sentinel and stopped at the previous-epoch rule. The oracle was the wrong statement of that fixture.",
       "fix": "oracle now names the change a wrong-leaf registration follows, the same way a change does; the captured sequence is replayed offline as a regression test and no further paid call was made",
-      "next": "none required; a guardian call was not needed because every disagreement was ours"
+      "next": "a complete two-role round still needs the guardian enabled in a separate call, with operator approval",
+      "guardian_calls_note": "the guardian role was not enabled for this run, so a complete two-role round has not been priced"
     },
     "live_round_utc": "2026-10-29 09:44 UTC",
     "review_source": "handoff/chapter2-loop-review.md and handoff/practical-engineering-scope.md; all reported defects reproduced locally before repair",
