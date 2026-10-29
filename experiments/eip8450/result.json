@@ -197,6 +197,43 @@
       "paid_calls_in_review": 0,
       "historical_usage_file_unchanged": true,
       "public_changes_in_review": false
+    },
+    "rounds": [
+      {
+        "run_utc": "2026-10-29 11:58 UTC",
+        "explorer_calls": 1,
+        "guardian_enabled": false,
+        "proposed_sequences": 8,
+        "invalid_sequences": 0,
+        "evaluated_sequences": 8,
+        "comparisons": 32,
+        "agreements": 28,
+        "divergences": 4,
+        "note": "the four disagreements were one sequence at four epochs, traced to our own fixture wording in the second statement"
+      },
+      {
+        "run_utc": "2026-10-29 12:17 UTC",
+        "explorer_calls": 1,
+        "guardian_enabled": true,
+        "proposed_sequences": 8,
+        "invalid_sequences": 0,
+        "evaluated_sequences": 8,
+        "comparisons": 32,
+        "agreements": 32,
+        "divergences": 0,
+        "note": "after the fix, a fresh set of model-proposed sequences reached full agreement; the guardian was enabled but had nothing to adjudicate"
+      },
+      {
+        "run_utc": "2026-10-29 12:22 UTC",
+        "role": "guardian",
+        "purpose": "adjudicate the earlier captured divergence",
+        "total_tokens": 12753,
+        "outcome": "named the second statement as the wrong one, which matches the fix already made",
+        "limitation": "the prompt disclosed the fix, so this is weak corroboration rather than an independent review"
+      }
+    ],
+    "pricing": {
+      "note": "provider-reported amounts; platform and top-up fees were not established"
     }
   },
   "stage_5_preview": {

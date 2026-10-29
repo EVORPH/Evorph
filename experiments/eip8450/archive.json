@@ -58,8 +58,8 @@
       "artifacts": [
         "private per-call capture and cost record, kept outside this tree"
       ],
-      "shows": "after the repair, one explorer call evaluated eight sequences over thirty-two comparisons and reached twenty-eight agreements; four disagreements were found and classified as a defect in our own written statement of the fixture, then fixed with a regression test that replays the captured sequence offline",
-      "does_not_show": "a protocol finding, because the disagreements were between two statements we wrote rather than between the draft and an implementation; and it does not price a complete two-role round, since the guardian role was not enabled"
+      "shows": "after the repair, one round evaluated eight sequences over thirty-two comparisons with full agreement, and an earlier round surfaced four disagreements traced to our own written statement of a fixture, which was then fixed and pinned by an offline regression test",
+      "does_not_show": "a protocol finding: the disagreements were between two statements we wrote, not between the draft and an implementation. The guardian role was priced on one adjudication whose prompt disclosed the fix already made, so that reply is corroboration and not an independent review"
     }
   ],
   "measured": {
@@ -82,6 +82,14 @@
       "comparisons": 32,
       "agreements": 28,
       "divergences": 4,
+      "guardian_calls": 0
+    },
+    "rounds_after_repair": 2,
+    "final_round": {
+      "evaluated_sequences": 8,
+      "comparisons": 32,
+      "agreements": 32,
+      "divergences": 0,
       "guardian_calls": 0
     }
   },
